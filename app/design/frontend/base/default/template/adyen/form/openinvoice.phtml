@@ -26,12 +26,16 @@
  */
 ?>
 <?php //TODO add a form to add data here, currently only on Adyen. ?>
-<?php $_code = $this->getMethodCode(); ?>
+<?php
+/** @var Adyen_Payment_Block_Form_Openinvoice $this */
+$_code = $this->getMethodCode();
+?>
 <fieldset class="form-list" id="payment_form_<?php echo $_code ?>" style="display:none">
     <ul>
 
         <?php if($this->genderShow()):?>
-        <li><label for="gender" class="required"><em>*</em><?php echo $this->__('Gender') ?></label>
+        <li class="fields">
+            <label for="gender" class="required"><?php echo $this->__('Gender') ?> <em class="required">*</em></label>
             <div class="input-box">
                 <select id="gender" name="payment[gender]" title="<?php echo $this->__('Gender') ?>" class="validate-select">
                     <?php $options = Mage::getResourceSingleton('customer/customer')->getAttribute('gender')->getSource()->getAllOptions();?>
@@ -45,57 +49,22 @@
         <?php endif; ?>
 
         <?php if($this->dobShow()):?>
-        <li>
-            <label for="month" class="required"><em>*</em><?php echo $this->__('Date of Birth') ?></label>
-            <div class="input-box customer-dob">
-                <?php
-                $this->setDateInput('d',
-                    '<div class="dob-day">
-                         <input type="text" id="day" name="payment[day]" value="' . $this->getDay() . '" title="' . $this->__('Day') . '" class="input-text validate-custom" />
-             <label for="' . $this->getFieldId('day') . '">' . $this->__('DD') . '</label>
-         </div>'
-                );
+        <li class="fields">
+            <?php $_dob = $this->getLayout()->createBlock('customer/widget_dob') ?>
 
-                $this->setDateInput('m',
-                    '<div class="dob-month">
-                         <input type="text" id="month" name="payment[month]" value="' . $this->getMonth()  . '" title="' . $this->__('Month')  . '" class="input-text validate-custom" ' . $this->getFieldParams()  . ' />
-             <label for="' . $this->getFieldId('month') . '">' . $this->__('MM')  . '</label>
-         </div>'
-                );
-
-                $this->setDateInput('y',
-                    '<div class="dob-year">
-                         <input type="text" id="year" name="payment[year]" value="' . $this->getYear()  . '" title="' . $this->__('Year')  . '" class="input-text validate-custom" ' . $this->getFieldParams()  . ' />
-             <label for="' . $this->getFieldId('year') . '">' . $this->__('YYYY')  . '</label>
-         </div>'
-                );
-                ?>
-                <?php echo $this->getSortedDateInputs() ?>
-                <div class="dob-full" style="display:none;">
-                    <input type="hidden" id="dob" name="payment[dob]" />
-                </div>
-
-                <div class="validation-advice" style="display:none;"></div>
-            </div>
-            <script type="text/javascript">
-                //<![CDATA[
-                var customer_dob = new Varien.DOB('.customer-dob', true, '<?php echo $this->getDateFormat() ?>');
-                //]]>
-            </script>
+            <?php echo $_dob->setDate($this->getDate())->setFieldIdFormat($_code.':%s')->setFieldNameFormat('payment[%s]')->toHtml() ?>
         </li>
         <?php endif; ?>
         <?php if($this->telephoneShow()):?>
         <li class="fields">
-            <div class="field">
-                <label for="billing:telephone" class="required"><em>*</em><?php echo $this->__('Telephone') ?></label>
+                <label for="billing:telephone" class="required"><?php echo $this->__('Telephone') ?> <em class="required">*</em></label>
                 <div class="input-box">
                     <input type="tel" name="payment[telephone]" value="<?php echo $this->escapeHtml($this->getAddress()->getTelephone()) ?>" title="<?php echo $this->__('Telephone') ?>" class="input-text <?php echo $this->helper('customer/address')->getAttributeValidationClass('telephone') ?>" id="telephone" />
                 </div>
-            </div>
         </li>
         <?php endif; ?>
 
-        <li>
+        <li class="fields">
             <?php echo $this->__('You will be redirected to Adyen website when you place an order.') ?>
         </li>
     </ul>

@@ -38,4 +38,8 @@ class Adyen_Payment_Model_Source_CcType {
         return $options;
     }
 
+    public function toOptionHash()
+    {
+        return Mage::helper('adyen')->getCcTypes();
+    }
 }

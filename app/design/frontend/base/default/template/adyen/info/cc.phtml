@@ -29,6 +29,9 @@
 if ($_info = $this->getInfo()) {
 	if ($this->isCseEnabled()) {
 		echo "Adyen Credit Card";
+        if($this->hasInstallments()):
+            echo "<br />" . $this->__('Installments: %s',  $this->htmlEscape($this->getInfo()->getAdditionalInformation('number_of_installments')))."<br/>";
+        endif;
 	}
 	else {
 		echo $this->__('Name on the Card: %s', $this->htmlEscape($_info->getCcOwner()))."<br/>";

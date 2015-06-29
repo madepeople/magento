@@ -25,24 +25,46 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
-class Adyen_Payment_Block_Form_Cc extends Mage_Payment_Block_Form_Cc {
+class Adyen_Payment_Block_Form_Cc extends Mage_Payment_Block_Form_Cc
+{
 
-    protected function _construct() {
+    protected function _construct()
+    {
         parent::_construct();
+        $this->setTemplate('adyen/form/cc.phtml');
 
-        $paymentMethodIcon = $this->getSkinUrl('images/adyen/img_trans.gif');
-        $label = Mage::helper('adyen')->_getConfigData("title", "adyen_cc");
+        if (Mage::getStoreConfig('payment/adyen_abstract/title_renderer')
+            == Adyen_Payment_Model_Source_Rendermode::MODE_TITLE_IMAGE) {
+            $this->setMethodTitle('');
+        }
+    }
 
-        $mark = Mage::getConfig()->getBlockClassName('core/template');
-        $mark = new $mark;
-        $mark->setTemplate('adyen/payment/payment_method_label.phtml')
-            ->setPaymentMethodIcon($paymentMethodIcon)
-            ->setPaymentMethodLabel($label)
-            ->setPaymentMethodClass("adyen_cc");
+    public function getMethodLabelAfterHtml()
+    {
+        if (Mage::getStoreConfig('payment/adyen_abstract/title_renderer')
+            == Adyen_Payment_Model_Source_Rendermode::MODE_TITLE) {
+            return '';
+        }
 
-        $this->setTemplate('adyen/form/cc.phtml')
-            ->setMethodTitle('')
-            ->setMethodLabelAfterHtml($mark->toHtml());
+        if (! $this->hasData('_method_label_html')) {
+            $imgFileName = 'creditcard';
+            $result = Mage::getDesign()->getFilename("images/adyen/{$imgFileName}.png", array('_type' => 'skin'));
+
+            $imageUrl = file_exists($result)
+                ? $this->getSkinUrl("images/adyen/{$imgFileName}.png")
+                : $this->getSkinUrl("images/adyen/img_trans.gif");
+
+            $labelBlock = Mage::app()->getLayout()->createBlock('core/template', null, array(
+                'template' => 'adyen/payment/payment_method_label.phtml',
+                'payment_method_icon' =>  $imageUrl,
+                'payment_method_label' => Mage::helper('adyen')->getConfigData('title', $this->getMethod()->getCode()),
+                'payment_method_class' => $this->getMethod()->getCode()
+            ));
+
+            $this->setData('_method_label_html', $labelBlock->toHtml());
+        }
+
+        return $this->getData('_method_label_html');
     }
 
     /**
@@ -69,8 +91,8 @@ class Adyen_Payment_Block_Form_Cc extends Mage_Payment_Block_Form_Cc {
         return Mage::helper('adyen/installments')->isInstallmentsEnabled();
     }
 
-    public function getRecurringType() {
-        return $this->getMethod()->getRecurringType();
+    public function showRememberThisCheckoutbox() {
+        return $this->getMethod()->showRememberThisCheckoutbox();
     }
 
     /**

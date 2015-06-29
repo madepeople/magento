@@ -93,8 +93,8 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
     }
 
     public function hasCashExpressCheckout() {
-        if(Mage::getStoreConfig('payment/adyen_pos/active')) {
-            return (int) Mage::getStoreConfig('payment/adyen_pos/cash_express_checkout');
+        if(Mage::getStoreConfig('payment/adyen_cash/active')) {
+            return (int) Mage::getStoreConfig('payment/adyen_cash/cash_express_checkout');
         }
         return false;
     }
@@ -146,6 +146,7 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
             case "XOF":
             case "XPF":
             case "GHC":
+            case "KMF":
                 $format = 0;
                 break;
             case "MRO":
@@ -165,6 +166,47 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
         }
 
         return number_format($amount, $format, '', '');
+    }
+
+    public function originalAmount($amount, $currency) {
+        // check the format
+        switch($currency) {
+            case "JPY":
+            case "IDR":
+            case "KRW":
+            case "BYR":
+            case "VND":
+            case "CVE":
+            case "DJF":
+            case "GNF":
+            case "PYG":
+            case "RWF":
+            case "UGX":
+            case "VUV":
+            case "XAF":
+            case "XOF":
+            case "XPF":
+            case "GHC":
+            case "KMF":
+                $format = 1;
+                break;
+            case "MRO":
+                $format = 10;
+                break;
+            case "BHD":
+            case "JOD":
+            case "KWD":
+            case "OMR":
+            case "LYD":
+            case "TND":
+                $format = 1000;
+                break;
+            default:
+                $format = 100;
+                break;
+        }
+
+        return ($amount / $format);
     }
 
     /*
@@ -192,6 +234,13 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
     }
 
     public function getRecurringCards($merchantAccount, $customerId, $recurringType) {
+
+        $cacheKey = $merchantAccount . "|" . $customerId . "|" . $recurringType;
+
+        // Load response from cache.
+        if ($recurringCards = Mage::app()->getCache()->load($cacheKey)) {
+            return unserialize($recurringCards);
+        }
 
         // create a arraylist with the cards
         $recurringCards = array();
@@ -230,19 +279,27 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
             curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($request));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-            $result = curl_exec($ch);
+            $results = curl_exec($ch);
+            $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            if($result === false) {
-                Mage::log("List recurring is failing error is: " . curl_error($ch), self::DEBUG_LEVEL, 'http-request.log',true);
-                Mage::throwException(Mage::helper('adyen')->__('List recurring is generating the error see the log'));
-            } else{
+            if ($httpStatus != 200) {
+                Mage::throwException(
+                    Mage::helper('adyen')->__('HTTP Status code %s received, data %s', $httpStatus, $results)
+                );
+            }
+
+            if ($results === false) {
+                Mage::throwException(
+                    Mage::helper('adyen')->__('Got an empty response, status code %s', $httpStatus)
+                );
+            }else{
                 /**
                  * The $result contains a JSON array containing
                  * the available payment methods for the merchant account.
                  */
 
                 // convert result to utf8 characters
-                $result = utf8_encode(urldecode($result));
+                $result = utf8_encode(urldecode($results));
                 // convert to array
                 parse_str($result,$result);
 
@@ -252,26 +309,30 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
                     $key2 = strstr($key, '_');
                     $keyNumber = str_replace($key2, "", $key);
                     $keyAttribute = substr($key2, 1);
+
+                    // set ideal to sepadirectdebit because it is and we want to show sepadirectdebit logo
+                    if($keyAttribute == "variant" && $value == "ideal") {
+                        $value = 'sepadirectdebit';
+                    }
+
                     $recurringCards[$keyNumber][$keyAttribute] = $value;
                 }
                 // unset the recurringDetailsResult because this is not a card
                 unset($recurringCards["recurringDetailsResult"]);
-
-                // filter out all non-creditcards
-                foreach($recurringCards as $key => $recurringCard) {
-
-                    if(!(isset($recurringCard["recurringDetailReference"]) && isset($recurringCard["variant"]) && isset($recurringCard["card_number"])
-                        && isset($recurringCard["card_expiryMonth"]) && isset($recurringCard["card_expiryYear"]))) {
-
-                        unset($recurringCards[$key]);
-                    }
-                }
             }
         }
+
+        // Save response to cache.
+        Mage::app()->getCache()->save(
+            serialize($recurringCards),
+            $cacheKey,
+            array(Mage_Core_Model_Config::CACHE_TAG),
+            60 * 5 // save for 5 minutes ( and will be removed if payment is done)
+        );
         return $recurringCards;
     }
 
-    public function removeRecurringCart($merchantAccount, $shopperReference, $recurringDetailReference) {
+    public function removeRecurringCard($merchantAccount, $shopperReference, $recurringDetailReference) {
 
         // rest call to disable cart
         $request = array(
@@ -302,7 +363,7 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
         $result = curl_exec($ch);
 
         if($result === false) {
-            Mage::log("Disable recurring contract is failing, error is: " . curl_error($ch), self::DEBUG_LEVEL, 'http-request.log',true);
+            Mage::log("Disable recurring contract is failing, error is: " . curl_error($ch), self::DEBUG_LEVEL, 'adyen_http-request.log',true);
             Mage::throwException(Mage::helper('adyen')->__('Disable recurring contract is generating the error see the log'));
         } else{
 
@@ -310,7 +371,7 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
             $result = utf8_encode(urldecode($result));
 
             if($result != "disableResult.response=[detail-successfully-disabled]") {
-                Mage::log("Disable contract is not succeeded the response is: " . $result, self::DEBUG_LEVEL, 'http-request.log',true);
+                Mage::log("Disable contract is not succeeded the response is: " . $result, self::DEBUG_LEVEL, 'adyen_http-request.log',true);
                 return false;
             }
             return true;
@@ -323,41 +384,61 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
      * Used via Payment method.Notice via configuration ofcourse Y or N
      * @return boolean true on demo, else false
      */
-    public function getConfigDataDemoMode($storeId = null) {
-        if ($this->_getConfigData('demoMode', null, $storeId) == 'Y') {
+    public function getConfigDataDemoMode($storeId = null)
+    {
+        if ($this->getConfigData('demoMode', null, $storeId) == 'Y') {
             return true;
         }
         return false;
     }
 
-    public function getConfigDataWsUserName($storeId = null) {
+    public function getConfigDataWsUserName($storeId = null)
+    {
         if ($this->getConfigDataDemoMode($storeId)) {
-            return $this->_getConfigData('ws_username_test', null, $storeId);
+            return $this->getConfigData('ws_username_test', null, $storeId);
         }
-        return $this->_getConfigData('ws_username_live', null, $storeId);
+        return $this->getConfigData('ws_username_live', null, $storeId);
     }
 
-    public function getConfigDataWsPassword($storeId = null) {
+    public function getConfigDataWsPassword($storeId = null)
+    {
         if ($this->getConfigDataDemoMode($storeId)) {
-            return Mage::helper('core')->decrypt($this->_getConfigData('ws_password_test', null, $storeId));
+            return Mage::helper('core')->decrypt($this->getConfigData('ws_password_test', null, $storeId));
         }
-        return Mage::helper('core')->decrypt($this->_getConfigData('ws_password_live', null, $storeId));
+        return Mage::helper('core')->decrypt($this->getConfigData('ws_password_live', null, $storeId));
     }
+
 
     /**
-     * @desc Give Default settings
-     * @example $this->_getConfigData('demoMode','adyen_abstract')
-     * @since 0.0.2
-     * @param string $code
+     * @param      $code
+     * @param null $paymentMethodCode
+     * @param null $storeId
+     * @deprecated please use getConfigData
+     * @return mixed
      */
-    public function _getConfigData($code, $paymentMethodCode = null, $storeId = null) {
+    public function _getConfigData($code, $paymentMethodCode = null, $storeId = null)
+    {
+        return $this->getConfigData($code, $paymentMethodCode, $storeId);
+    }
+
+
+    /**
+     * @desc    Give Default settings
+     * @example $this->_getConfigData('demoMode','adyen_abstract')
+     * @since   0.0.2
+     *
+     * @param string $code
+     *
+     * @return mixed
+     */
+    public function getConfigData($code, $paymentMethodCode = null, $storeId = null) {
         if (null === $storeId) {
             $storeId = Mage::app()->getStore()->getStoreId();
         }
         if (empty($paymentMethodCode)) {
-            return Mage::getStoreConfig("payment/adyen_abstract/$code", $storeId);
+            return trim(Mage::getStoreConfig("payment/adyen_abstract/$code", $storeId));
         }
-        return Mage::getStoreConfig("payment/$paymentMethodCode/$code", $storeId);
+        return trim(Mage::getStoreConfig("payment/$paymentMethodCode/$code", $storeId));
     }
 
     // Function to get the client ip address
@@ -392,6 +473,43 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
             return true;
         }
         return false;
+    }
+
+
+    /**
+     * Street format
+     * @param type $address
+     * @return Varien_Object
+     */
+    public function getStreet($address) {
+        if (empty($address)) return false;
+        $street = self::formatStreet($address->getStreet());
+        $streetName = $street['0'];
+        unset($street['0']);
+//        $streetNr = implode('',$street);
+        $streetNr = implode(' ',$street);
+
+        return new Varien_Object(array('name' => $streetName, 'house_number' => $streetNr));
+    }
+
+    /**
+     * Fix this one string street + number
+     * @example street + number
+     * @param type $street
+     * @return type $street
+     */
+    static public function formatStreet($street) {
+        if (count($street) != 1) {
+            return $street;
+        }
+        preg_match('/((\s\d{0,10})|(\s\d{0,10}\w{1,3}))$/i', $street['0'], $houseNumber, PREG_OFFSET_CAPTURE);
+        if(!empty($houseNumber['0'])) {
+            $_houseNumber = trim($houseNumber['0']['0']);
+            $position = $houseNumber['0']['1'];
+            $streeName = trim(substr($street['0'], 0, $position));
+            $street = array($streeName,$_houseNumber);
+        }
+        return $street;
     }
 
 }

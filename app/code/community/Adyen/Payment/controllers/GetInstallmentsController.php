@@ -34,9 +34,9 @@ class Adyen_Payment_GetInstallmentsController extends Mage_Core_Controller_Front
         $params = $this->getRequest()->getParams();
 
         // get installments for cctype
-        $ccType = $params['ccType'];
+        $ccType = isset($params['ccType']) ? $params['ccType'] : "";
 
-        $result = Mage::helper('adyen/installments')->getInstallmentForCreditCardType($params['ccType']);
+        $result = Mage::helper('adyen/installments')->getInstallmentForCreditCardType($ccType);
 
         $jsonData = json_encode($result);
         $this->getResponse()->setHeader('Content-type', 'application/json');

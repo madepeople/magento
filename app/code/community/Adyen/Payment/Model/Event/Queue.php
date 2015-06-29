@@ -31,8 +31,6 @@ class Adyen_Payment_Model_Event_Queue extends Mage_Core_Model_Abstract {
      * Initialize resources
      */
     protected function _construct() {
-        $this->_init('adyen/adyen_event_queue');
+        $this->_init('adyen/event_queue');
     }
-
-
 }

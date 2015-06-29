@@ -41,19 +41,20 @@
                     <frontend_class>adyen-method-abstract</frontend_class>
                     <frontend_model>adyen/adminhtml_system_config_fieldset_payment</frontend_model>
                     <comment><![CDATA[<p>Click the following link for an <a target="_blank" href="http://vimeo.com/94005128">instructional video on how to set up the Adyen Magento plugin</a>, or <a target="_blank" href="https://www.adyen.com/dam/documentation/manuals/MagentoQuickIntegrationManual.pdf">here to download the Quick Quick Integration Guide</a> or <a target="_blank" href="https://www.adyen.com/dam/documentation/manuals/AdyenMagentoExtension.pdf">here to download the more advanced manual</a> and <a target="_blank" href="https://www.adyen.com/home/payment-services/plug-ins/magento#form">here to sign up for a test account</a>.
+                    For the test environment you can use test cards. You can find the test cards <a target="_blank" href="https://www.adyen.com/home/support/knowledgebase/implementation-articles?article=kb_imp_17">here</a>.
                     The latest version of the <a target="_blank" href="https://github.com/adyenpayments/magento/releases">Adyen Magento plugin is also available through GitHub</a>.
                     If you have any further questions, please visit the <a target="_blank" href="http://www.adyen.com">Adyen.com</a> website or email <a href="mailto:magento@adyen.com">magento@adyen.com</a>.
                     </p>]]></comment>
                     <fields>
                         <version translate="label">
-                            <label>Extension version</label>
-                                    <frontend_type>label</frontend_type>
-                                    <frontend_model>Adyen_Payment_Block_Adminhtml_Version</frontend_model>
-                                    <sort_order>0</sort_order>
-                                    <show_in_default>1</show_in_default>
-                                    <show_in_website>1</show_in_website>
-                                    <show_in_store>1</show_in_store>
-                        </version>
+                                        <label>Extension version</label>
+                                                <frontend_type>label</frontend_type>
+                                                <frontend_model>Adyen_Payment_Block_Adminhtml_Version</frontend_model>
+                                                <sort_order>0</sort_order>
+                                                <show_in_default>1</show_in_default>
+                                                <show_in_website>1</show_in_website>
+                                                <show_in_store>1</show_in_store>
+                                    </version>
                         <merchantAccount translate="label">
                             <label>Merchant Account</label>
                             <comment><![CDATA[You can find this in the Adyen back-office. The Adyen back-office can be found on <a target="_blank" href="https://ca-test.adyen.com">https://ca-test.adyen.com</a> for test or <a target="_blank" href="https://ca-live.adyen.com">https://ca-live.adyen.com</a> for live.]]></comment>
@@ -123,6 +124,15 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </payment_cancelled>
+                        <payment_cancelled_redirect>
+                            <label>Redirect to page after cancellation</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_cancelRedirect</source_model>
+                            <sort_order>65</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </payment_cancelled_redirect>
                         <refund_authorized translate="label">
                             <label>Refund authorise (refund success)</label>
                             <comment>(optional) leave empty if you are not sure</comment>
@@ -164,7 +174,7 @@
                         <capture_mode translate="label">
                             <label>Capture Mode</label>
                             <frontend_type>select</frontend_type>
-                            <comment>If you are using "The manual capture in Adyen" set this to manual and you will get a chance to capture it by creating the invoice and select "capture online".If not sure select auto.Notice:Ideal and Cash are always Auto Capture!</comment>
+                            <comment>If you are using "The manual capture in Adyen" set this to manual and you will get a chance to capture it by creating the invoice and select "capture online".If not sure select auto.Notice:iDEAL and Cash are always Auto Capture!</comment>
                             <source_model>adyen/source_captureModes</source_model>
                             <sort_order>78</sort_order>
                             <show_in_default>1</show_in_default>
@@ -199,6 +209,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </ws_password_test>
+                        <ws_test_button translate="label">
+                            <label></label>
+                            <button_label>Test Webserver Credentials for test</button_label>
+                            <modus>test</modus>
+                            <frontend_model>adyen/adminhtml_system_config_testWebserverConfiguration</frontend_model>
+                            <sort_order>91</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store></show_in_store>
+                        </ws_test_button>
                         <ws_username_live translate="label">
                             <label>Adyen ws username for Live</label>
                             <comment>Normally this will be ws@Company.YourCompanyCode</comment>
@@ -218,6 +238,24 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </ws_password_live>
+                        <ws_live_button translate="label">
+                            <label></label>
+                            <button_label>Test Webserver Credentials for live</button_label>
+                            <modus>live</modus>
+                            <frontend_model>adyen/adminhtml_system_config_testWebserverConfiguration</frontend_model>
+                            <sort_order>111</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                        </ws_live_button>
+                        <debug translate="label">
+                            <label>Debug</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>112</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </debug>
                         <auto_capture_openinvoice>
                             <label>Auto capture Openinvoice(AfterPay/Klarna) payment methods</label>
                             <comment>By default OpenInvoice is set to manual capture. If you want auto capture you need to contact magento@adyen.com so we can set this up for your account and then you can set this option to yes</comment>
@@ -238,6 +276,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </paypal_capture_mode>
+                        <pending_status>
+                            <label>Pending order status</label>
+                            <comment>By default pending notifications are not send. If you want these notifications to be received enable the BankTransfer Pending Notification and\or Direct-Debit Pending Notification in the Adyen Platform</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_status_pending</source_model>
+                            <sort_order>119</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </pending_status>
                         <send_email_bank_sepa_on_pending>
                             <label>Send confirmation email for Banktransfer/SEPA</label>
                             <comment>Send a confirmation mail after banktranfer/SEPA is placed (not yet paid). Make sure that you have BankTransfer Pending Notification enabled in Adyen backoffice to do this contact magento@adyen.com</comment>
@@ -286,6 +334,45 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </send_invoice_update_mail>
+                        <title_renderer>
+                            <label>Title renderer</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_rendermode</source_model>
+                            <sort_order>220</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title_renderer>
+                        <ignore_refund_notification>
+                            <label>Ignore refund notification</label>
+                            <comment>If the refund is done on the Adyen Platform it will send a refund notification to Magento that automatically create a credit memo. If you enable this setting this will not happen because it will not process any of the REFUND notification that is received.</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>230</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </ignore_refund_notification>
+                        <update_notification_cronjob>
+                            <label>Update notification queue by cronjob (every 5 minutes)</label>
+                            <comment>If you using API methods(CC, SEPA, ELV or Boleto) and your magento order processing is slow it could be that the notificaiton is faster then magento saves the ordrer. The notification will then be saved in a queue. This is processed on default when next notification is received. If you want to update the notificaiton queue every 5 minutes activate this and make sure cronjob of magento is called by your webserver</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>240</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </update_notification_cronjob>
+                        <fraud_manual_review_status>
+                            <label>Manual Review Status</label>
+                            <comment>If you are using Manual Review and a payment match your case set here the status it should have in magento. It will then move to processing when you approve the payment on Adyen platform. If you don't have this or don't want a seperate status please keep it on -- Please Select --</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_status_pending</source_model>
+                            <sort_order>250</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </fraud_manual_review_status>
                     </fields>
                 </adyen_abstract>
                 <!-- @Hpp only -->
@@ -366,8 +453,8 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>90</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
                         </disable_hpptypes>
                         <payment_routines translate="label">
                             <label>Payment Flow Selection</label>
@@ -377,7 +464,7 @@
                             <sort_order>95</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
+                            <show_in_store>1</show_in_store>
                             <depends><disable_hpptypes>1</disable_hpptypes></depends>
                         </payment_routines>
                         <cache_directory_lookup>
@@ -401,16 +488,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </return_url_in_request>
-                        <show_ideal_logos>
-                            <label>Show ideal bank logos</label>
-                            <comment>Show ideal bank logos instead of dropdown</comment>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>115</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </show_ideal_logos>
                         <allowspecific translate="label">
                             <label>Payment to applicable countries</label>
                             <frontend_type>allowspecific</frontend_type>
@@ -432,6 +509,70 @@
                         </specificcountry>
                     </fields>
                 </adyen_hpp>
+                <adyen_ideal translate="label" module="adyen">
+                    <label>Adyen iDEAL</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>315</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <show_ideal_logos>
+                            <label>Show iDEAL bank logos</label>
+                            <comment>Show iDEAL bank logos (radio buttons) instead of dropdown</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </show_ideal_logos>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </sort_order>
+                        <allowspecific translate="label">
+                            <label>Payment to applicable countries</label>
+                            <frontend_type>allowspecific</frontend_type>
+                            <sort_order>49</sort_order>
+                            <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </allowspecific>
+                        <specificcountry translate="label">
+                            <label>Payment to Specific countries</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <sort_order>50</sort_order>
+                            <source_model>adminhtml/system_config_source_country</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends><allowspecific>1</allowspecific></depends>
+                        </specificcountry>
+                    </fields>
+                </adyen_ideal>
                 <!-- @Pos only -->
                 <adyen_pos translate="label" module="adyen">
                     <label>Adyen POS</label>
@@ -476,6 +617,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </recurringtypes>
+                        <add_receipt_order_lines translate="label">
+                            <label>Add orderlines to receipt</label>
+                            <comment>If you have the Adyen App configured to print to an external printer the orderlines can be printed on to the receipt if you turn this option on.</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>33</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </add_receipt_order_lines>
                         <enable_scanner translate="label">
                             <label>Enable Scanner</label>
                             <comment>If you enable this you have the possiblity to scan products with a hand scanner on the shopping cart page and this will automatically add products to the shopping cart based on the same SKU name</comment>
@@ -507,16 +658,102 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </express_checkout>
-                        <create_shipment>
-                            <label>Create Shipment</label>
-                            <comment>If you enable this there will be automatically be created a shipment if the invoice is created</comment>
+                        <express_checkout_redirect_connect>
+                            <label>Redirect direct</label>
+                            <comment>Redirect directly to the Adyen app to do the PIN payment. This is not supported for all browsers if you have problems set this setting to false</comment>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>38</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
+                            <depends><express_checkout>1</express_checkout></depends>
+                        </express_checkout_redirect_connect>
+                        <express_checkout_kiosk_mode>
+                            <label>Kiosk mode</label>
+                            <comment>If you turn kiosk modus on it will not autocomplete the customers based on the filled in email address</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>45</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </express_checkout_kiosk_mode>
+                        <express_checkout_recurring>
+                            <label>Show Recurring Cards</label>
+                            <comment>This will show the recurring cards beneath the express checkout and makes it possible to do a recurring online payment by clicking on the card</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends><express_checkout_kiosk_mode>0</express_checkout_kiosk_mode></depends>
+                        </express_checkout_recurring>
+                        <create_shipment>
+                            <label>Create Shipment</label>
+                            <comment>If you enable this there will be automatically be created a shipment if the invoice is created</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>55</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
                         </create_shipment>
+                        <allowspecific translate="label">
+                            <label>Payment to applicable countries</label>
+                            <frontend_type>allowspecific</frontend_type>
+                            <sort_order>60</sort_order>
+                            <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </allowspecific>
+                        <specificcountry translate="label">
+                            <label>Payment to Specific countries</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <sort_order>70</sort_order>
+                            <source_model>adminhtml/system_config_source_country</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends><allowspecific>1</allowspecific></depends>
+                        </specificcountry>
+                    </fields>
+                </adyen_pos>
+                <adyen_cash translate="label" module="adyen">
+                    <label>Adyen CASH</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>325</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </sort_order>
                         <cash_express_checkout>
                             <label>Cash Express checkout</label>
                             <comment>This will show a checkout buttton on the shopping cart to directly do a Cash payment without going to the checkout steps. Make sure that you have Cash enabled on your skin and HPP payment method is enabled and correctly configured. You must be logged into your magento account on the front-end to see the button</comment>
@@ -536,7 +773,6 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
-                            <depends><cash_express_checkout>1</cash_express_checkout></depends>
                         </cash_drawer>
                         <cash_drawer_printer_ip>
                             <label>IP address printer</label>
@@ -598,10 +834,20 @@
                             <show_in_store>1</show_in_store>
                             <depends><ip_filter>1</ip_filter></depends>
                         </ip_filter_to>
+                        <visible_type>
+                            <label>Visible in:</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_VisibleType</source_model>
+                            <sort_order>80</sort_order>
+                            <comment>Where do you want to show this payment method in the backend of magento or in the frontend for the shoppers</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </visible_type>
                         <allowspecific translate="label">
                             <label>Payment to applicable countries</label>
                             <frontend_type>allowspecific</frontend_type>
-                            <sort_order>49</sort_order>
+                            <sort_order>90</sort_order>
                             <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -610,7 +856,7 @@
                         <specificcountry translate="label">
                             <label>Payment to Specific countries</label>
                             <frontend_type>multiselect</frontend_type>
-                            <sort_order>50</sort_order>
+                            <sort_order>100</sort_order>
                             <source_model>adminhtml/system_config_source_country</source_model>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -618,7 +864,7 @@
                             <depends><allowspecific>1</allowspecific></depends>
                         </specificcountry>
                     </fields>
-                </adyen_pos>
+                </adyen_cash>
                 <!-- @Openinvoice only -->
                 <adyen_openinvoice translate="label" module="adyen">
                     <label>Adyen OpenInvoice</label>
@@ -689,16 +935,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </telephone_show>
-                        <different_address_disable>
-                            <label>Disable on Different Address</label>
-                            <comment>If the delivery address and billing address in the checkout is not the same disable this payment method because Klarna will most likely reject it</comment>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>38</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </different_address_disable>
                         <fee translate="label">
                             <label>Fee</label>
                             <frontend_type>text</frontend_type>
@@ -708,10 +944,30 @@
                             <show_in_store>1</show_in_store>
                             <validate>validate-number</validate>
                         </fee>
+                        <different_address_disable>
+                            <label>Disable on Different Address</label>
+                            <comment>If the delivery address and billing address in the checkout is not the same disable this payment method because Klarna will most likely reject it</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>39</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </different_address_disable>
+                        <failed_attempt_disable>
+                            <label>Disable this payment method if first attempt is refused</label>
+                            <comment>If the first attempt is refused don't show this as an payment option for the current quote</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>45</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </failed_attempt_disable>
                         <allowspecific translate="label">
                             <label>Payment to applicable countries</label>
                             <frontend_type>allowspecific</frontend_type>
-                            <sort_order>40</sort_order>
+                            <sort_order>49</sort_order>
                             <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1231,6 +1487,87 @@
                         </visible_type>
                     </fields>
                 </adyen_sepa>
+                <adyen_pay_by_mail translate="label" module="adyen">
+                    <label>Adyen Pay By Mail</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>390</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>25</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </sort_order>
+                        <session_validity>
+                            <label>Session Validity</label>
+                            <comment>How many days do you want this payment page to be active</comment>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </session_validity>
+                        <skin_code translate="label">
+                            <label>Skin Code</label>
+                            <comment>The skin code you want to use levae this empty if you want to use the same as Adyen HPP settings</comment>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </skin_code>
+                        <secret_wordt translate="label">
+                            <label>HMAC Key for Test</label>
+                            <comment>Should match with the HMAC test key in the Adyen backoffice. Fill this in if you are using a different skin then defined in Adyen HPP</comment>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </secret_wordt>
+                        <secret_wordp translate="label">
+                            <label>HMAC Key for Live</label>
+                            <comment>Should match with the HMAC live key in the Adyen backoffice. Fill this in if you are using a different skin then defined in Adyen HPP</comment>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </secret_wordp>
+                        <visible_type>
+                            <label>Visible in:</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_VisibleType</source_model>
+                            <sort_order>70</sort_order>
+                            <comment>Where do you want to show this payment method in the backend of magento or in the frontend for the shoppers</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </visible_type>
+                    </fields>
+                </adyen_pay_by_mail>
             </groups>
         </payment>
     </sections>

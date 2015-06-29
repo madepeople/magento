@@ -54,20 +54,58 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         //get soap request
         $request = Mage::registry('soap-request');
 
-
         if (empty($request)) {
-            return false;
+            $this->_return401();
+            return;
         }
 
+        $status = "";
         if (is_array($request->notification->notificationItems->NotificationRequestItem)) {
             foreach ($request->notification->notificationItems->NotificationRequestItem as $item) {
-                $this->processResponse($item);
+                $item = $this->formatSoapNotification($item);
+                $status = $this->processNotification($item);
             }
         } else {
             $item = $request->notification->notificationItems->NotificationRequestItem;
-            $this->processResponse($item);
+            $item = $this->formatSoapNotification($item);
+            $status = $this->processNotification($item);
         }
-        exit();
+
+        if($status == "401"){
+            $this->_return401();
+            return;
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * @desc Format soap notification so it is allign with HTTP POST and JSON output
+     * @param $item
+     * @return mixed
+     */
+    protected function formatSoapNotification($item)
+    {
+        $additionalData = array();
+        foreach ($item->additionalData->entry as $additionalDataItem) {
+            $key = $additionalDataItem->key;
+            $value = $additionalDataItem->value;
+
+            if (strpos($key,'.') !== false) {
+                $results = explode('.', $key);
+                $size = count($results);
+                if($size == 2) {
+                    $additionalData[$results[0]][$results[1]] = $value;
+                } elseif($size == 3) {
+                    $additionalData[$results[0]][$results[1]][$results[2]] = $value;
+                }
+            } else {
+                $additionalData[$key] = $value;
+            }
+        }
+        $item->additionalData = $additionalData;
+        return $item;
     }
 
     public function openinvoiceAction() {
@@ -216,18 +254,39 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
      * Adyen returns POST variables to this action
      */
     public function successAction() {
-        $status = $this->processResponse();
+        // get the response data
+        $response = $this->getRequest()->getParams();
 
-        if ($status) {
-            $session = $this->_getCheckout();
-            $session->unsAdyenRealOrderId();
-            $session->setQuoteId($session->getAdyenQuoteId(true));
-            $session->getQuote()->setIsActive(false)->save();
+        // process
+        try {
+            $result = $this->validateResultUrl($response);
 
-            $this->_redirect('checkout/onepage/success');
-        } else {
-            $this->cancel();
+            if ($result) {
+                $session = $this->_getCheckout();
+                $session->unsAdyenRealOrderId();
+                $session->setQuoteId($session->getAdyenQuoteId(true));
+                $session->getQuote()->setIsActive(false)->save();
+                $this->_redirect('checkout/onepage/success');
+            } else {
+                $this->cancel();
+            }
+        } catch(Exception $e) {
+            Mage::logException($e);
+            throw $e;
         }
+    }
+
+    public function successPosRedirectAction()
+    {
+        $session = $this->_getCheckout();
+
+        // clear session for email shopper
+        $session->setAdyenEmailShopper("");
+
+        $session->unsAdyenRealOrderId();
+        $session->setQuoteId($session->getAdyenQuoteId(true));
+        $session->getQuote()->setIsActive(false)->save();
+        $this->_redirect('checkout/onepage/success');
     }
 
     /**
@@ -237,12 +296,16 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
     public function cancel() {
 
         $session = $this->_getCheckout();
+
+        // clear session for email shopper
+        $session->setAdyenEmailShopper("");
+
         $order = Mage::getModel('sales/order');
         $incrementId = $session->getLastRealOrderId();
 
         if (empty($incrementId)) {
             $session->addError($this->__('Your payment failed, Please try again later'));
-            $this->_redirect('checkout/cart');
+            $this->_redirectCheckoutCart();
             return;
         }
 
@@ -252,11 +315,36 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         $quoteId = $order->getQuoteId();
         $cart = Mage::getModel('sales/quote')->load($quoteId);
         $cart->setIsActive(true)->save();
+        // reset reserverOrderId because already used by previous order
+        $cart->setReservedOrderId(null);
+        $session->replaceQuote($cart);
+
+        // if setting failed_attempt_disable is on and the payment method is openinvoice ignore this payment mehthod the second time
+        if($this->_getConfigData('failed_attempt_disable', 'adyen_openinvoice') && $order->getPayment()->getMethod() == "adyen_openinvoice") {
+            // check if payment failed
+            $response = $this->getRequest()->getParams();
+            if($response['authResult'] == "REFUSED") {
+                $session->setOpenInvoiceInactiveForThisQuoteId($quoteId);
+            }
+        }
 
         //handle the old order here
+        $orderStatus = $this->_getConfigData('payment_cancelled', 'adyen_abstract', $order->getStoreId());
+
         try {
-            $order->setActionFlag(Mage_Sales_Model_Order::ACTION_FLAG_CANCEL, true);
-            $order->cancel()->save();
+            $order->setActionFlag($orderStatus, true);
+            switch ($orderStatus) {
+                case Mage_Sales_Model_Order::STATE_HOLDED:
+                    if ($order->canHold()) {
+                        $order->hold()->save();
+                    }
+                    break;
+                default:
+                    if($order->canCancel()) {
+                        $order->cancel()->save();
+                    }
+                    break;
+            }
         } catch (Mage_Core_Exception $e) {
             Mage::logException($e);
         }
@@ -265,27 +353,95 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         if(isset($params['authResult']) && $params['authResult'] == Adyen_Payment_Model_Event::ADYEN_EVENT_CANCELLED) {
             $session->addError($this->__('You have cancelled the order. Please try again'));
         } else {
-            $session->addError($this->__('Your payment failed. Please try again later'));
+            $session->addError($this->__('Your payment failed, Please try again later'));
         }
 
-        $this->_redirect('checkout/cart');
+        // if payment method is adyen_pos or adyen_cash redirect to checkout if the kiosk mode is turned off
+        if(!$this->_getConfigData('express_checkout_kiosk_mode', 'adyen_pos') && ($order->getPayment()->getMethod() == "adyen_pos" || $order->getPayment()->getMethod() == "adyen_cash")) {
+
+            // add email to session so this can be shown
+            $session->setAdyenEmailShopper($order->getCustomerEmail());
+
+            $redirect = Mage::getUrl('checkout/cart');
+            $this->_redirectUrl($redirect);
+        } else {
+            $this->_redirectCheckoutCart();
+        }
+    }
+
+    protected function _redirectCheckoutCart()
+    {
+        $redirect = Mage::getStoreConfig('payment/adyen_abstract/payment_cancelled_redirect');
+
+        if($redirect == "checkout/cart") {
+            $redirect = Mage::getUrl('checkout/cart');
+            $this->_redirectUrl($redirect);
+        } else if ($redirect == "checkout/onepage") {
+            $redirect = Mage::helper('checkout/url')->getCheckoutUrl();
+            $this->_redirectUrl($redirect);
+        } else {
+            $this->_redirect($redirect);
+        }
     }
 
     public function insAction() {
         try {
-
-            $status = $this->processResponse();
-
-            if($status == "401"){
-                $this->_return401();
-            } else {
-                echo "[accepted]";
+            // if version is in the notification string show the module version
+            $response = $this->getRequest()->getParams();
+            if(isset($response['version'])) {
+                $helper = Mage::helper('adyen');
+                $this->getResponse()->setBody($helper->getExtensionVersion());
+                return $this;
             }
+
+            $notificationMode = isset($response['live']) ? $response['live'] : "";
+
+            if($notificationMode != "" && $this->_validateNotificationMode($notificationMode))
+            {
+                // add HTTP POST attributes as an array so it is the same as JSON and SOAP result
+                foreach($response as $key => $value) {
+                    if (strpos($key,'_') !== false) {
+                        $results = explode('_', $key);
+                        $size = count($results);
+                        if($size == 2) {
+                            $response[$results[0]][$results[1]] = $value;
+                        } elseif($size == 3) {
+                            $response[$results[0]][$results[1]][$results[2]] = $value;
+                        }
+                    }
+                }
+
+                // create amount array so it is the same as JSON SOAP response
+                $response['amount'] = array('value' => $response['value'], 'currency' => $response['currency']);
+
+                $status = $this->processNotification($response);
+
+                if($status == "401"){
+                    $this->_return401();
+                    return;
+                } else {
+                    $this->getResponse()
+                        ->setHeader('Content-Type', 'text/html')
+                        ->setBody("[accepted]");
+                    return;
+                }
+            } else
+            {
+                if($notificationMode == "") {
+                    $this->_return401();
+                    return;
+                }
+
+                Mage::throwException(
+                    Mage::helper('adyen')->__('Mismatch between Live/Test modes of Magento store and the Adyen platform.')
+                );
+                return;
+            }
+
         } catch (Exception $e) {
             Mage::logException($e);
         }
-
-        exit();
+        return $this;
     }
 
     public function jsonAction() {
@@ -293,18 +449,39 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         try {
             $notificationItems = json_decode(file_get_contents('php://input'), true);
 
-            foreach($notificationItems['notificationItems'] as $notificationItem)
+            $notificationMode = isset($notificationItems['live']) ? $notificationItems['live'] : "";
+
+            if($notificationMode != "" && $this->_validateNotificationMode($notificationMode))
             {
-                $status = $this->processResponse($notificationItem['NotificationRequestItem']);
-                if($status == "401"){
-                    $this->_return401();
+                foreach($notificationItems['notificationItems'] as $notificationItem)
+                {
+                    $status = $this->processNotification($notificationItem['NotificationRequestItem']);
+                    if($status == "401"){
+                        $this->_return401();
+                        return;
+                    }
                 }
+                $this->getResponse()
+                    ->setHeader('Content-Type', 'text/html')
+                    ->setBody("[accepted]");
+                return;
+            } else
+            {
+                if($notificationMode == "") {
+                    $this->_return401();
+                    return;
+                }
+
+                Mage::throwException(
+                    Mage::helper('adyen')->__('Mismatch between Live/Test modes of Magento store and the Adyen platform')
+                );
             }
-            echo "[accepted]";
+
+
         } catch (Exception $e) {
             Mage::logException($e);
         }
-        exit();
+        return $this;
     }
 
     public function cashAction() {
@@ -323,30 +500,36 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
     }
 
     /* START actions for POS */
-    public function successPosAction() {
+    public function successPosAction()
+    {
+//        $response = $this->getRequest();
+        // need to get the full request
+        $response = $_REQUEST;
 
-        echo $this->processPosResponse();
+        $html = $this->processPosResponse($response);
+
+        $this->getResponse()
+            ->setHeader('Content-Type', 'text/html')
+            ->setBody($html);
+
         return $this;
     }
 
     public function getOrderStatusAction()
     {
-        if($_POST['merchantReference'] != "") {
-            // get the order
-            $order = Mage::getModel('sales/order')->loadByIncrementId($_POST['merchantReference']);
-            // if order is not cancelled then order is success
-            if($order->getStatus() == Mage_Sales_Model_Order::STATE_PROCESSING || $order->getAdyenEventCode() == Adyen_Payment_Model_Event::ADYEN_EVENT_POSAPPROVED || substr($order->getAdyenEventCode(), 0, 13)  == Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISATION) {
-                echo 'true';
-            } elseif($order->getStatus() == 'pending' &&  $order->getAdyenEventCode() == "") {
-                echo 'wait';
-                Mage::log("NO MATCH! JUST WAIT order is not matching with merchantReference:".$_POST['merchantReference'] . " status is:" . $order->getStatus() . " and adyen event status is:" . $order->getAdyenEventCode(), Zend_Log::DEBUG, "adyen_notification_pos.log", true);
-            } else {
-                Mage::log("NO MATCH! order is not matching with merchantReference:".$_POST['merchantReference'] . " status is:" . $order->getStatus() . " and adyen event status is:" . $order->getAdyenEventCode(), Zend_Log::DEBUG, "adyen_notification_pos.log", true);
-            }
+        $merchantReference = $this->getRequest()->getParam('merchantReference');
+        $result = Mage::getModel('adyen/getPosOrderStatus')->hasApprovedOrderStatus($merchantReference);
 
-            // extra check cancelled
+        $response = "";
+
+        if($result) {
+            $response = 'true';
         }
-        return;
+
+//        $this->getResponse()->clearHeaders()->setHeader('Content-type','application/json',true);
+        $this->getResponse()->setBody($response);
+
+        return $this;
     }
 
     public function cancelAction()
@@ -355,8 +538,8 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
     }
 
 
-    public function processPosResponse() {
-        return Mage::getModel('adyen/process')->processPosResponse();
+    public function processPosResponse($response) {
+        return Mage::getModel('adyen/processPosResult')->processPosResponse($response);
     }
     /* END actions for POS */
 
@@ -365,16 +548,15 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
     }
 
     protected function _return401(){
-        header('HTTP/1.1 401 Unauthorized',true,401);
+        $this->getResponse()->setHttpResponseCode(401);
     }
 
-    /**
-     * @since v008
-     * @desc Update order status accordingly
-     * @throws Exception
-     */
-    public function processResponse($soapItem = null) {
-        return Mage::getModel('adyen/process')->processResponse($soapItem);
+    public function processNotification($response) {
+        return Mage::getModel('adyen/processNotification')->processResponse($response);
+    }
+
+    public function validateResultUrl($response) {
+        return Mage::getModel('adyen/validateResultUrl')->validateResponse($response);
     }
 
     protected function _getCheckout() {
@@ -385,13 +567,24 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         return Mage::getModel('sales/order');
     }
 
+    protected function _validateNotificationMode($notificationMode)
+    {
+        $mode = $this->_getConfigData('demoMode');
+        if ($mode=='Y' &&  $notificationMode == "false" || $mode=='N' &&  $notificationMode == 'true') {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * @desc Give Default settings
-     * @example $this->_getConfigData('demoMode','adyen_abstract')
-     * @since 0.0.2
-     * @param string $code
+     * @param $code
+     * @param null $paymentMethodCode
+     * @param null $storeId
+     * @return mixed
      */
     protected function _getConfigData($code, $paymentMethodCode = null, $storeId = null) {
-        return Mage::getModel('adyen/process')->getConfigData($code, $paymentMethodCode, $storeId);
+        return Mage::helper('adyen')->_getConfigData($code, $paymentMethodCode, $storeId);
     }
+
 }

@@ -15,17 +15,59 @@ But you can also request or suggest new features or code changes yourself!
 You can create issues on our Magento Repository or if you have some specific problems for your account you can contact <a href="mailto:magento@adyen.com">magento@adyen.com</a>  as well.
 
 <h2>Current Release</h2>
+<h3>2.3.0</h3>
+<h4>Features</h4>
+* #225 HPP payment methods now are generated as seperate payment methods inside Magento
+* #293 Added Payment method PayByMail
+* #303 Implemented Cash API and added it as a different payment method (Adyen Cash)
+* #270 Option to redirect to checkout instead of shopping cart
+* #304 Added option to connect POS payment to shopper account based on provided email address
+* #288 #299 Added support for Manual Review
+* #294 Show installments on order print outs, confirmation emails and admin panel
+* #284 Added Cronjob that executes notifications that are in the adyen event queue
+* #283 #246 Added extra validation and restrict length on CVC
+* #276 Added pending status setting
+* #273 Added authCode and acquirerReference response into payment overview of the order
+* #248 Added ReceiptOrderLines to Adyen APP for printing out order details for POS payments
+* #247 Enable Adyen OneClick for backend order
+* #245 Refactor the code for Notifications and Result URL with better logging
+* #244 Added validate Webserver username and password in configuration
+* #242 Added OneClick payment available for Sepa,Ideal(becomes sepa) and ELV
+* #241 Added recurring cards to billing agreement of magento
+
+<h4>Fixes</h4>
+* #317 POS redirect to app fixes for various browsers
+* #307 Rewrite POS resultUrl and CheckStatus check
+* #305 Get RegionCode instead of Region to fix payments for PayPal
+* #301 Added extra check on pspreference for AUTHORISATION success=false notification (for api payments) before canceling the order
+* #291 Added support for Comorian Franc (KMF) currency
+* #290 Added extra validation if modus is corresponding with notification (JSON, HTTP POST)
+* #285 #243 API fixes for MultiShipping method
+* #282 Fixes that Boleto pdf is not being generated
+* #264 Separate ResultAction for POS
+* #259 Only cancel a order when the payment method is the same as on Magento side
+* #249 Don't show remember these details for credit cards if user is checking out as a quest
+* #238 Generated OneClick payments as different payment methods
+* #237 Fixed that previous button on Adyen HPP will not return in a empty basket when you are not logged in on Magento side
+* #231 bug fixes, simplified frontend templates, fixes queue
+* #228 Don't cancel the order if the previous AUTHORISATION event was succesfull
+* #227 Don't cancel orders on Refused result url (only for Ideal)
+* #224 Fix JS error when selecting card and Ideal is not available.
+* #223 Magento API do not send email when order is created. Only when AUTHORISATION notification is received bug
+* #188 Use POS checkout name based on POS payment method title
+* #187 Pre fill email in POS express checkout if Payment failes
+* #79 Added option to disable Klarna after first Klarna payment failed
+
+<h2>Previous Releases</h2>
 <h3>2.2.2</h3>
 <h4>Features</h4>
-* #220 Add only Authorization with success true to the notification queue
+* #220 Added only Authorization with success true to the notification queue
 * #221 Added support for HMAC key in Notification
 
 <h4>Fixes</h4>
 * #217 Afterpay send in vatCategory = High instead of None
 * #219 Notification Queue does not update attempts if second attempt failed
 
-
-<h2>Previous Releases</h2>
 <h3>2.2.1</h3>
 <h4>Features</h4>
 * #196 Add option for PayPal to select a capture mode different from the default

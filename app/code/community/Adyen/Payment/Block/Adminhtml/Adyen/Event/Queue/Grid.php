@@ -44,7 +44,7 @@ class Adyen_Payment_Block_Adminhtml_Adyen_Event_Queue_Grid extends Mage_Adminhtm
      */
     protected function _prepareCollection()
     {
-        $collection = Mage::getResourceModel('adyen/adyen_event_queue_collection');
+        $collection = Mage::getResourceModel('adyen/event_queue_collection');
         $this->setCollection($collection);
         if (!$this->getParam($this->getVarNameSort())) {
             $collection->setOrder('event_queue_id', 'desc');

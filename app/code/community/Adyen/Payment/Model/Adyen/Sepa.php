@@ -33,6 +33,7 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
     protected $_paymentMethod = 'sepa';
     protected $_canUseCheckout = true;
     protected $_canUseInternal = true;
+    protected $_canUseForMultishipping = true;
 
     public function __construct()
     {
@@ -143,4 +144,94 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
         parent::prepareSave();
     }
 
+    public function getBillingAgreementCollection()
+    {
+        return Mage::getResourceModel('sales/billing_agreement_collection')
+            ->addFieldToFilter('customer_id', $this->getInfoInstance()->getQuote()->getCustomerId())
+            ->addFieldToFilter('status', 'active')
+            ->addFieldToFilter('method_code', $this->getCode());
+    }
+
+    /**
+     * Init billing agreement
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return $this
+     */
+    public function initBillingAgreementToken(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        $agreement->setRedirectUrl(
+            Mage::getUrl('*/*/returnWizard', array('payment_method' => $this->getCode(), 'token' => uniqid('t')))
+        );
+        return $this;
+    }
+
+
+    /**
+     * Retrieve billing agreement details
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return $this
+     */
+    public function getBillingAgreementTokenInfo(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+
+        return $this;
+    }
+
+
+    /**
+     * Create billing agreement
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return $this
+     */
+    public function placeBillingAgreement(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        $agreement->setBillingAgreementId('SEPA12345');
+        return $this;
+    }
+
+
+    /**
+     * Update billing agreement status
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreeme*
+     * @return $this
+     nt
+     */
+    public function updateBillingAgreementStatus(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        return $this;
+    }
+
+//    public function validateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile)
+//    {
+//        return true;
+//    }
+//
+//    public function submitRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile, Mage_Payment_Model_Info $paymentInfo)
+//    {
+//
+//    }
+//
+//    public function getRecurringProfileDetails($referenceId, Varien_Object $result)
+//    {
+//
+//    }
+//
+//    public function canGetRecurringProfileDetails()
+//    {
+//        return false;
+//    }
+//
+//    public function updateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile)
+//    {
+//
+//    }
+//
+//    public function updateRecurringProfileStatus(Mage_Payment_Model_Recurring_Profile $profile)
+//    {
+//
+//    }
 }

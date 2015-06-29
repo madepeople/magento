@@ -33,11 +33,17 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
     protected $_infoBlockType = 'adyen/info_pos';
     protected $_paymentMethod = 'pos';
     protected $_isInitializeNeeded = true;
-    
+
     /**
      * @var GUEST_ID , used when order is placed by guests
      */
     const GUEST_ID = 'customer_';
+
+    protected $_paymentMethodType = 'pos';
+
+    public function getPaymentMethodType() {
+        return $this->$_paymentMethodType;
+    }
 
     /*
      * only enable if adyen_cc is enabled
@@ -71,7 +77,10 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
             $data = new Varien_Object($data);
         }
         $info = $this->getInfoInstance();
-               
+
+        // save value remember details checkbox
+        $info->setAdditionalInformation('store_cc', $data->getStoreCc());
+
         return $this;
     }
 
@@ -113,15 +122,19 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
         $adyFields['paymentAmount'] = $amount;
         $adyFields['merchantReference'] = $realOrderId;
         $adyFields['paymentAmountGrandTotal'] = $order->formatPrice($order->getGrandTotal()); // for showing only
-        
+
         // for recurring payments
         $recurringType = $this->_getConfigData('recurringtypes', 'adyen_pos');
-        $adyFields['recurringContract'] = $recurringType;
+
+        if($order->getPayment()->getAdditionalInformation("store_cc") != "") {
+            $adyFields['recurringContract'] = $recurringType;
+        }
+
         $adyFields['shopperReference'] = (!empty($customerId)) ? $customerId : self::GUEST_ID . $realOrderId;
         $adyFields['shopperEmail'] = $customerEmail;
 
-        Mage::log($adyFields, self::DEBUG_LEVEL, 'http-request.log',true);
-        
+        Mage::log($adyFields, self::DEBUG_LEVEL, 'adyen_http-request.log',true);
+
         return $adyFields;
     }
 
@@ -143,4 +156,13 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
         $stateObject->setState($state);
         $stateObject->setStatus($this->_getConfigData('order_status'));
     }
+
+    public function showRememberThisCheckoutbox() {
+        $recurringType = $this->_getConfigData('recurringtypes', 'adyen_pos');
+        if($recurringType == "ONECLICK" || $recurringType == "ONECLICK,RECURRING") {
+            return true;
+        }
+        return false;
+    }
+
 }

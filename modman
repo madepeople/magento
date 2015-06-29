@@ -1,15 +1,14 @@
 ## Modman Module Adyen Payment
-
-app/code/community/Adyen/Payment/   app/code/community/Adyen/Payment/
-app/design/adminhtml/default/default/layout/adyen.xml   app/design/adminhtml/default/default/layout/adyen.xml
-app/design/adminhtml/default/default/template/adyen/    app/design/adminhtml/default/default/template/adyen/
-app/design/frontend/base/default/layout/adyen.xml   app/design/frontend/base/default/layout/adyen.xml
-app/design/frontend/base/default/template/adyen/    app/design/frontend/base/default/template/adyen/
-app/etc/modules/Adyen_Payment.xml   app/etc/modules/Adyen_Payment.xml
-skin/frontend/base/default/css/adyenstyle.css   skin/frontend/base/default/css/adyenstyle.css
-skin/frontend/base/default/images/adyen/    skin/frontend/base/default/images/adyen/
-js/adyen/payment/   js/adyen/payment/
-app/locale/de_DE/*  app/locale/de_DE/
-app/locale/es_ES/*  app/locale/es_ES/
-app/locale/fr_FR/*  app/locale/fr_FR/
-app/locale/nl_NL/*  app/locale/nl_NL/
+app/code/community/Adyen/*                      app/code/community/Adyen/
+app/design/adminhtml/default/default/layout/*   app/design/adminhtml/default/default/layout/
+app/design/adminhtml/default/default/template/* app/design/adminhtml/default/default/template/
+app/design/frontend/base/default/layout/*       app/design/frontend/base/default/layout/
+app/design/frontend/base/default/template/*     app/design/frontend/base/default/template/
+app/etc/modules/*                               app/etc/modules/
+skin/frontend/base/default/css/*                skin/frontend/base/default/css/
+skin/frontend/base/default/images/*             skin/frontend/base/default/images/
+js/adyen/*                                      js/adyen/
+app/locale/de_DE/*                              app/locale/de_DE/
+app/locale/es_ES/*                              app/locale/es_ES/
+app/locale/fr_FR/*                              app/locale/fr_FR/
+app/locale/nl_NL/*                              app/locale/nl_NL/

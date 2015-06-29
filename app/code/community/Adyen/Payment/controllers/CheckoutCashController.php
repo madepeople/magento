@@ -30,7 +30,6 @@ class Adyen_Payment_CheckoutCashController extends Mage_Core_Controller_Front_Ac
 
     public function indexAction()
     {
-
         $customer = Mage::getSingleton('customer/session');
 
         // only proceed if customer is logged in
@@ -59,7 +58,7 @@ class Adyen_Payment_CheckoutCashController extends Mage_Core_Controller_Front_Ac
                 ->setPaymentMethod('adyen_pos');
 
             $payment = $quote->getPayment();
-            $payment->importData(array('method' => 'adyen_hpp', 'hpp_type' => "c_cash"));
+            $payment->importData(array('method' => 'adyen_cash'));
 
             $quote->collectTotals()->save();
             $session = Mage::getSingleton('checkout/session');
@@ -72,16 +71,75 @@ class Adyen_Payment_CheckoutCashController extends Mage_Core_Controller_Front_Ac
             $order->setStatus($oderStatus);
             $order->save();
 
-            // add order information to the session
-            $session->setLastOrderId($order->getId())
-                ->setLastRealOrderId($order->getIncrementId())
-                ->setLastSuccessQuoteId($order->getQuoteId())
-                ->setLastQuoteId($order->getQuoteId());
+            // redirect to success page
+            $session->unsAdyenRealOrderId();
+            $session->setLastSuccessQuoteId($session->getQuoteId());
+            $session->getQuote()->setIsActive(false)->save();
 
-            $this->_redirect('adyen/process/redirect');
-            return $this;
+            // needed for redirect through javascript (cashdrawer)
+            $session->setLastQuoteId($session->getQuoteId());
+            $session->setLastOrderId($order->getId());
+
+            // redirect to page where cash drawer is open, do it in a seperate page bercause in checkout page it is not working looks like conflict with prototype
+            $openCashDrawer = Mage::helper('adyen')->getConfigData("cash_drawer", "adyen_cash", null);
+            if($openCashDrawer) {
+
+                $cashDrawerIp = Mage::helper('adyen')->getConfigData("cash_drawer_printer_ip", "adyen_cash", $order->getStoreId());
+                $cashDrawerPort = Mage::helper('adyen')->getConfigData("cash_drawer_printer_port", "adyen_cash", $order->getStoreId());
+                $cashDrawerDeviceId = Mage::helper('adyen')->getConfigData("cash_drawer_printer_device_id", "adyen_cash", $order->getStoreId());
+
+                if($cashDrawerIp != '' && $cashDrawerPort != '' && $cashDrawerDeviceId != '') {
+
+                    $html = '<html><head><link rel="stylesheet" type="text/css" href="'.Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN).'/frontend/base/default/css/adyenstyle.css"><script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>';
+
+                    // for cash add epson libary to open the cash drawer
+                    $jsPath = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS);
+
+                    $html .= '<script src="'.$jsPath.'adyen/payment/epos-device-2.6.0.js"></script>';
+                    $html .= '</head><body class="redirect-body-adyen">';
+                    $html.= '
+                            <script type="text/javascript">
+                                var ipAddress = "'.$cashDrawerIp.'";
+                                var port = "'.$cashDrawerPort.'";
+                                var deviceID = "'.$cashDrawerDeviceId.'";
+                                var ePosDev = new epson.ePOSDevice();
+                                ePosDev.connect(ipAddress, port, Callback_connect);
+
+                                function Callback_connect(data) {
+                                    if (data == "OK" || data == "SSL_CONNECT_OK") {
+                                        var options = "{}";
+                                        ePosDev.createDevice(deviceID, ePosDev.DEVICE_TYPE_PRINTER, options, callbackCreateDevice_printer);
+                                    } else {
+                                        alert("connected to ePOS Device Service Interface is failed. [" + data + "]");
+                                    }
+                                }
+
+                                function callbackCreateDevice_printer(data, code) {
+                                    var print = data;
+                                    var drawer = "{}";
+                                    var time = print.PULSE_100
+                                    print.addPulse();
+                                    print.send();
+                                    window.location = "'. Mage::getUrl('checkout/onepage/success') .'";
+                                }
+                            </script>
+                    ';
+
+                    $html.= '</body></html>';
+
+                    $this->getResponse()->setBody($html);
+                } else {
+                    Mage::throwException(
+                        Mage::helper('adyen')->__('You did not fill in all the fields (ip,port,device id) to use Cash Drawer support')
+                    );
+                }
+            } else {
+                $this->_redirect('checkout/onepage/success');
+            }
         } else {
-            Mage::throwException('Customer is not logged in.');
+            Mage::throwException(
+                Mage::helper('adyen')->__('Customer is not logged in.')
+            );
         }
     }
 }

@@ -37,7 +37,7 @@ class Adyen_Payment_Block_Checkout_Success extends Mage_Checkout_Block_Onepage_S
 	{
 		$this->order = Mage::getModel('sales/order')->loadByIncrementId($this->getOrderId());
 		
-		if ($this->order->getPayment()->getMethod() == "adyen_boleto")
+		if ($this->order->getPayment() && $this->order->getPayment()->getMethod() == "adyen_boleto")
 			return true;
 		
 		return false;
@@ -61,5 +61,3 @@ class Adyen_Payment_Block_Checkout_Success extends Mage_Checkout_Block_Onepage_S
 	}
 		
 }
-
-?>

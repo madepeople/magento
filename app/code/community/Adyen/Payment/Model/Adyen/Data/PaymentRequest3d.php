@@ -37,13 +37,12 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest3d extends Adyen_Payment_Mode
         $this->browserInfo = new Adyen_Payment_Model_Adyen_Data_BrowserInfo();
     }
 	
-    public function create(Varien_Object $payment, $amount, $order, $paymentMethod = null, $merchantAccount = null) {
-    	$this->merchantAccount = $merchantAccount;
-		
+    public function create(Varien_Object $payment, $merchantAccount)
+    {
+        $this->merchantAccount = $merchantAccount;
         $this->browserInfo->acceptHeader = $_SERVER['HTTP_ACCEPT'];
         $this->browserInfo->userAgent = $_SERVER['HTTP_USER_AGENT'];
         $this->shopperIP = $_SERVER['REMOTE_ADDR'];
-		
 		$this->md = $payment->getAdditionalInformation('md');
 		$this->paResponse = $payment->getAdditionalInformation('paResponse');
         return $this;

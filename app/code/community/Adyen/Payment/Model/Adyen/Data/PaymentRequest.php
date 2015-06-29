@@ -34,6 +34,7 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
     public $card;
     public $dccQuote;
     public $deliveryAddress;
+    public $billingAddress;
     public $elv;
     public $fraudOffset;
     public $merchantAccount;
@@ -64,7 +65,9 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
         $this->bankAccount = new Adyen_Payment_Model_Adyen_Data_BankAccount(); // for SEPA
     }
 
-    public function create(Varien_Object $payment, $amount, $order, $paymentMethod = null, $merchantAccount = null, $recurringType = null, $enableMoto = null) {
+    public function create(Varien_Object $payment, $amount, $paymentMethod = null, $merchantAccount = null, $recurringType = null, $enableMoto = null)
+    {
+        $order = $payment->getOrder();
         $incrementId = $order->getIncrementId();
         $orderCurrencyCode = $order->getOrderCurrencyCode();
         // override amount because this amount uses the right currency
@@ -123,6 +126,32 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 $this->shopperName = null;
             	$this->elv = null;
                 $this->bankAccount = null;
+                $this->deliveryAddress = new Adyen_Payment_Model_Adyen_Data_DeliveryAddress();
+                $this->billingAddress = new Adyen_Payment_Model_Adyen_Data_BillingAddress();
+
+                $billingAddress = $order->getBillingAddress();
+                $helper = Mage::helper('adyen');
+
+                if($billingAddress)
+                {
+                    $this->billingAddress->street = $helper->getStreet($billingAddress)->getName();
+                    $this->billingAddress->houseNumberOrName = $helper->getStreet($billingAddress)->getHouseNumber();
+                    $this->billingAddress->city = $billingAddress->getCity();
+                    $this->billingAddress->postalCode = $billingAddress->getPostcode();
+                    $this->billingAddress->stateOrProvince = $billingAddress->getRegionCode();
+                    $this->billingAddress->country = $billingAddress->getCountryId();
+                }
+
+                $deliveryAddress = $order->getShippingAddress();
+                if($deliveryAddress)
+                {
+                    $this->deliveryAddress->street = $helper->getStreet($billingAddress)->getName();
+                    $this->deliveryAddress->houseNumberOrName = $helper->getStreet($billingAddress)->getHouseNumber();
+                    $this->deliveryAddress->city = $billingAddress->getCity();
+                    $this->deliveryAddress->postalCode = $billingAddress->getPostcode();
+                    $this->deliveryAddress->stateOrProvince = $billingAddress->getRegionCode();
+                    $this->deliveryAddress->country = $billingAddress->getCountryId();
+                }
 
                 if($paymentMethod == "oneclick") {
                     $recurringDetailReference = $payment->getAdditionalInformation("recurring_detail_reference");
@@ -137,37 +166,56 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                     $this->shopperInteraction = "Ecommerce";
                 }
 
-
-                if(Mage::app()->getStore()->isAdmin() && $enableMoto != null && $enableMoto == 1) {
+                if($paymentMethod == "adyen_cc" && Mage::app()->getStore()->isAdmin() && $enableMoto != null && $enableMoto == 1) {
                     $this->shopperInteraction = "Moto";
+                }
+
+                // if it is a sepadirectdebit set selectedBrand to sepadirectdebit
+                if($payment->getCcType() == "sepadirectdebit") {
+                    $this->selectedBrand = "sepadirectdebit";
+                }
+
+                if($recurringDetailReference && $recurringDetailReference != "") {
+                    $this->selectedRecurringDetailReference = $recurringDetailReference;
                 }
 
 				if (Mage::getModel('adyen/adyen_cc')->isCseEnabled()) {
 
-                    if($recurringDetailReference && $recurringDetailReference != "") {
-                        $this->selectedRecurringDetailReference = $recurringDetailReference;
+                    // this is only needed for creditcards
+                    if($payment->getAdditionalInformation("encrypted_data") != "") {
+                        $this->card = null;
+                        $kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
+                        $kv->key = new SoapVar("card.encrypted.json", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
+                        $kv->value = new SoapVar($payment->getAdditionalInformation("encrypted_data"), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
+                        $this->additionalData->entry = $kv;
+                    } else {
+                        if($paymentMethod == 'cc') {
+                            // For CC encrypted data is needed if you use CSE
+                            Mage::throwException(
+                                Mage::helper('adyen')->__('Missing the encrypted data value. Make sure the Client Side Encryption(CSE) script did encrypt the Credit Card details')
+                            );
+                        }
                     }
-
-					$this->card = null;
-					$kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
-					$kv->key = new SoapVar("card.encrypted.json", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
-					$kv->value = new SoapVar($payment->getAdditionalInformation("encrypted_data"), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
-					$this->additionalData->entry = $kv;
 				}
 				else {
 
                     if($recurringDetailReference && $recurringDetailReference != "") {
-                        $this->selectedRecurringDetailReference = $recurringDetailReference;
 
-                        if($recurringType != "RECURRING") {
-                            $this->card->cvc = $payment->getCcCid();
+                        // this is only needed for creditcards
+                        if($payment->getCcCid() != ""  && $payment->getCcExpMonth() != "" &&  $payment->getCcExpYear() != "")
+                        {
+                            if($recurringType != "RECURRING") {
+                                $this->card->cvc = $payment->getCcCid();
+                            }
+
+                            $this->card->expiryMonth = $payment->getCcExpMonth();
+                            $this->card->expiryYear = $payment->getCcExpYear();
+                        } else {
+                            $this->card = null;
                         }
 
-                        // TODO: check if expirymonth and year is changed if so add this in the card object
-                        $this->card->expiryMonth = $payment->getCcExpMonth();
-                        $this->card->expiryYear = $payment->getCcExpYear();
-
                     } else {
+                        // this is only the case for adyen_cc payments
                         $this->card->cvc = $payment->getCcCid();
                         $this->card->expiryMonth = $payment->getCcExpMonth();
                         $this->card->expiryYear = $payment->getCcExpYear();

@@ -27,22 +27,36 @@
  */
 class Adyen_Payment_Block_Form_Boleto extends Mage_Payment_Block_Form {
 
-    protected function _construct() {
-        $paymentMethodIcon = $this->getSkinUrl('images/adyen/img_trans.gif');
-        $label = Mage::helper('adyen')->_getConfigData("title", "adyen_boleto");
-
-        $mark = Mage::getConfig()->getBlockClassName('core/template');
-        $mark = new $mark;
-        $mark->setTemplate('adyen/payment/payment_method_label.phtml')
-            ->setPaymentMethodIcon($paymentMethodIcon)
-            ->setPaymentMethodLabel($label)
-            ->setPaymentMethodClass("adyen_boleto");
-
-        $this->setTemplate('adyen/form/boleto.phtml')
-            ->setMethodTitle('')
-            ->setMethodLabelAfterHtml($mark->toHtml());
-
+    protected function _construct()
+    {
         parent::_construct();
+        $this->setTemplate('adyen/form/boleto.phtml');
+
+        if (Mage::getStoreConfig('payment/adyen_abstract/title_renderer')
+            == Adyen_Payment_Model_Source_Rendermode::MODE_TITLE_IMAGE) {
+            $this->setMethodTitle('');
+        }
+    }
+
+    public function getMethodLabelAfterHtml()
+    {
+        if (Mage::getStoreConfig('payment/adyen_abstract/title_renderer')
+            == Adyen_Payment_Model_Source_Rendermode::MODE_TITLE) {
+            return '';
+        }
+
+        if (! $this->hasData('_method_label_html')) {
+            $labelBlock = Mage::app()->getLayout()->createBlock('core/template', null, array(
+                'template' => 'adyen/payment/payment_method_label.phtml',
+                'payment_method_icon' =>  $this->getSkinUrl('images/adyen/img_trans.gif'),
+                'payment_method_label' => Mage::helper('adyen')->getConfigData('title', $this->getMethod()->getCode()),
+                'payment_method_class' => $this->getMethod()->getCode()
+            ));
+
+            $this->setData('_method_label_html', $labelBlock->toHtml());
+        }
+
+        return $this->getData('_method_label_html');
     }
 
     /**

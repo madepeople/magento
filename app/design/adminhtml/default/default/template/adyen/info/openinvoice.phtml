@@ -40,9 +40,13 @@
     <?php if($_info->getAdyenKlarnaNumber() != null && $_info->getAdyenKlarnaNumber() != ""): ?>
         <?php echo Mage::helper('adyen')->__('Klarna reservation number: %s', $this->htmlEscape($_info->getAdyenKlarnaNumber())) ?> <br/>
     <?php endif; ?>
-
-    <?php $paymentMethod = $_info->getAdyenPaymentMethod() ?>
-    <?php if (!empty($paymentMethod)): ?>
-        <?php echo $this->__('Payment Method: %s', $this->htmlEscape($paymentMethod)) ?><br/>
+    <?php if($this->htmlEscape($this->getInfo()->getAdyenRefusalReasonRaw()) != ""): ?>
+        <?php echo Mage::helper('adyen')->__('Raw acquirer response: %s', $this->htmlEscape($this->getInfo()->getAdyenRefusalReasonRaw())) ?><br/>
+    <?php endif; ?>
+    <?php if($this->htmlEscape($this->getInfo()->getAdyenAuthCode()) != ""): ?>
+        <?php echo Mage::helper('adyen')->__('Authorisation code: %s', $this->htmlEscape($this->getInfo()->getAdyenAuthCode())) ?><br/>
+    <?php endif; ?>
+    <?php if($this->htmlEscape($this->getInfo()->getAdyenAcquirerReference()) != ""): ?>
+        <?php echo Mage::helper('adyen')->__('Acquirer reference: %s', $this->htmlEscape($this->getInfo()->getAdyenAcquirerReference())) ?><br/>
     <?php endif; ?>
 <?php endif; ?>
