@@ -67,6 +67,7 @@ class Adyen_Payment_Model_ValidateResultUrl extends Mage_Core_Model_Abstract {
         // authenticate result url
         $authStatus = Mage::getModel('adyen/authenticate')->authenticate($actionName, $params);
         if (!$authStatus) {
+            $this->_debug($storeId);
             Mage::throwException(
                 Mage::helper('adyen')->__('ResultUrl authentification failure')
             );

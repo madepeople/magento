@@ -89,17 +89,10 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
             if($incrementId) {
                 $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
                 if ($order->getId()) {
+                    // set StoreId for retrieving debug log setting
+                    $storeId = $order->getStoreId();
 
-                    if($this->_validateNotification($order, $params)) {
-
-                        // set StoreId for retrieving debug log setting
-                        $storeId = $order->getStoreId();
-
-                        $this->_updateOrder($order, $params);
-
-                    } else {
-                        $this->_debugData['info'] = 'Order does not validate payment method in Magento don\'t match with payment method in notification';
-                    }
+                    $this->_updateOrder($order, $params);
                 } else {
                     $this->_debugData['error'] = 'Order does not exists with increment_id: ' . $incrementId;
                     $this->_addNotificationToQueue($params);
@@ -138,44 +131,6 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Extra validation check on the payment method
-     * @param $order
-     * @param $params
-     * @return bool
-     */
-    protected function _validateNotification($order, $params)
-    {
-        $paymentMethod = trim(strtolower($params->getData('paymentMethod')));
-
-        if($paymentMethod != '') {
-            $orderPaymentMethod = strtolower($this->_paymentMethodCode($order));
-
-            // Only possible for the Adyen HPP payment method
-            if($orderPaymentMethod == 'adyen_hpp') {
-                if(substr($orderPaymentMethod, 0, 6) == 'adyen_') {
-                    if(substr($orderPaymentMethod, 0, 10) == 'adyen_hpp_') {
-                        $orderPaymentMethod = substr($orderPaymentMethod, 10);
-                    } else {
-                        $orderPaymentMethod = substr($orderPaymentMethod, 6);
-                    }
-                }
-            } else {
-                return true;
-            }
-
-            $this->_debugData['_validateNotification'] = 'Payment method in Magento is: ' . $orderPaymentMethod . ", payment method in notification is: " . $paymentMethod;
-
-            if($orderPaymentMethod == $paymentMethod) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-        // if payment method in notification is empty just process it
-        return true;
     }
 
     // notification attributes
@@ -475,7 +430,7 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
                 if($_paymentCode != "adyen_pos") {
                     // ignore capture if you are on auto capture (this could be called if manual review is enabled and you have a capture delay)
                     if (!$this->_isAutoCapture($order)) {
-                        $this->_setPaymentAuthorized($order, false);
+                        $this->_setPaymentAuthorized($order, false, true);
                     }
                 } else {
 
@@ -760,9 +715,61 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
             return;
         }
 
-        $this->_createInvoice($order);
+        // validate if amount is total amount
+        $orderCurrencyCode = $order->getOrderCurrencyCode();
+        if ($this->_value == Mage::helper('adyen')->formatAmount($order->getGrandTotal(), $orderCurrencyCode)) {
+
+        }
+
+        $orderCurrencyCode = $order->getOrderCurrencyCode();
+        $orderAmount = (int) Mage::helper('adyen')->formatAmount($order->getGrandTotal(), $orderCurrencyCode);
+
+        if($this->_isTotalAmount($orderAmount)) {
+            $this->_createInvoice($order);
+        } else {
+            $this->_debugData['_prepareInvoice partial authorisation step1'] = 'This is a partial AUTHORISATION';
+
+            // Check if this is the first partial authorisation or if there is already been an authorisation
+            $paymentObj = $order->getPayment();
+            $authorisationAmount = $paymentObj->getAdyenAuthorisationAmount();
+            if($authorisationAmount != "") {
+                $this->_debugData['_prepareInvoice partial authorisation step2'] = 'There is already a partial AUTHORISATION received check if this combined with the previous amounts match the total amount of the order';
+                $authorisationAmount = (int) $authorisationAmount;
+                $currentValue = (int) $this->_value;
+                $totalAuthorisationAmount = $authorisationAmount + $currentValue;
+
+                // update amount in column
+                $paymentObj->setAdyenAuthorisationAmount($totalAuthorisationAmount);
+
+                if($totalAuthorisationAmount == $orderAmount) {
+                    $this->_debugData['_prepareInvoice partial authorisation step3'] = 'The full amount is paid. This is the latest AUTHORISATION notification. Create the invoice';
+                    $this->_createInvoice($order);
+                } else {
+                    // this can be multiple times so use envenData as unique key
+                    $this->_debugData['_prepareInvoice partial authorisation step3'] = 'The full amount is not reached. Wait for the next AUTHORISATION notification. The current amount that is authorized is:' . $totalAuthorisationAmount;
+                }
+            } else {
+                $this->_debugData['_prepareInvoice partial authorisation step2'] = 'This is the first partial AUTHORISATION save this into the adyen_authorisation_amount field';
+                $paymentObj->setAdyenAuthorisationAmount($this->_value);
+            }
+        }
 
         $order->sendOrderUpdateEmail($_mail);
+    }
+
+    protected function _isTotalAmount($orderAmount) {
+
+        $this->_debugData['_isTotalAmount'] = 'Validate if AUTHORISATION notification has the total amount of the order';
+        $value = (int)$this->_value;
+
+        if($value == $orderAmount) {
+            $this->_debugData['_isTotalAmount result'] = 'AUTHORISATION has the full amount';
+            return true;
+        } else {
+            $this->_debugData['_isTotalAmount result'] = 'This is a partial AUTHORISATION, the amount is ' . $this->_value;
+            return false;
+        }
+
     }
 
     protected function _createInvoice($order)
@@ -869,7 +876,7 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
     /**
      * @param $order
      */
-    protected function _setPaymentAuthorized($order, $manualReviewComment = true)
+    protected function _setPaymentAuthorized($order, $manualReviewComment = true, $createInvoice = false)
     {
         $this->_debugData['_setPaymentAuthorized start'] = 'Set order to authorised';
 
@@ -878,8 +885,9 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
         $amount = $this->_value;
         $orderAmount = (int) Mage::helper('adyen')->formatAmount($order->getGrandTotal(), $currency);
 
-        $this->_debugData['_setPaymentAuthorized amount'] = 'amount notification:'.$amount . ' amount order:'.$orderAmount;
-        if($amount == $orderAmount) {
+        // create invoice for the capture notification if you are on manual capture
+        if($createInvoice == true && $amount == $orderAmount) {
+            $this->_debugData['_setPaymentAuthorized amount'] = 'amount notification:'.$amount . ' amount order:'.$orderAmount;
             $this->_createInvoice($order);
         }
 

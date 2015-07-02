@@ -46,13 +46,14 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
     }
 
     /*
-     * only enable if adyen_cc is enabled
+     * Check if IP filter is active
      */
     public function isAvailable($quote = null)
     {
         $isAvailable = parent::isAvailable($quote);
         // check if ip range is enabled
         $ipFilter = $this->_getConfigData('ip_filter', 'adyen_pos');
+
         if($isAvailable && $ipFilter) {
             // check if ip is in range
             $ip =  Mage::helper('adyen')->getClientIp();

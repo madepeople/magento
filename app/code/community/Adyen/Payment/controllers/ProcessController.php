@@ -421,6 +421,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
                     return;
                 } else {
                     $this->getResponse()
+	                    ->clearHeader('Content-Type')
                         ->setHeader('Content-Type', 'text/html')
                         ->setBody("[accepted]");
                     return;
@@ -462,6 +463,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
                     }
                 }
                 $this->getResponse()
+	                ->clearHeader('Content-Type')
                     ->setHeader('Content-Type', 'text/html')
                     ->setBody("[accepted]");
                 return;
@@ -509,6 +511,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         $html = $this->processPosResponse($response);
 
         $this->getResponse()
+	        ->clearHeader('Content-Type')
             ->setHeader('Content-Type', 'text/html')
             ->setBody($html);
 

@@ -87,14 +87,27 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data {
 
     public function hasExpressCheckout() {
         if(Mage::getStoreConfig('payment/adyen_pos/active')) {
-            return (int) Mage::getStoreConfig('payment/adyen_pos/express_checkout');
+            // check if metmethod is available
+            $methodModel = Mage::getModel('adyen/adyen_pos');
+            if ($methodModel) {
+                if($methodModel->isAvailable()) {
+                    return (int) Mage::getStoreConfig('payment/adyen_pos/express_checkout');
+                }
+            }
         }
         return false;
     }
 
     public function hasCashExpressCheckout() {
         if(Mage::getStoreConfig('payment/adyen_cash/active')) {
-            return (int) Mage::getStoreConfig('payment/adyen_cash/cash_express_checkout');
+
+            // check if metmethod is available
+            $methodModel = Mage::getModel('adyen/adyen_cash');
+            if ($methodModel) {
+                if($methodModel->isAvailable()) {
+                    return (int) Mage::getStoreConfig('payment/adyen_cash/cash_express_checkout');
+                }
+            }
         }
         return false;
     }

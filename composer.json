@@ -1,6 +1,6 @@
 {
     "name": "adyen/payment",
-    "description": "Official Magento Plugin to connect to Payment Service Provider Adyen'.",
+    "description": "Official Magento Plugin to connect to Payment Service Provider Adyen.",
     "type": "magento-module",
     "homepage": "https://github.com/adyenpayments/magento",
     "license": "OSL-3.0",

@@ -78,7 +78,7 @@
                             Validation.creditCartTypes.set('CB', [new RegExp('^4[0-9]{12}([0-9]{3})?$'), new RegExp('^[0-9]{3}$'), true]);
                             Validation.creditCartTypes.set('ELO', [new RegExp(/^((((636368)|(438935)|(504175)|(451416)|(636297)|(506699))\d{0,10})|((5067)|(4576)|(4011))\d{0,12})$/), new RegExp('^[0-9]{3}$'), true]);
                             Validation.creditCartTypes.set('hipercard', [new RegExp(/^(606282\d{10}(\d{3})?)|(3841\d{15})$/), new RegExp('^[0-9]{3}$'), true]);
-                            Validation.creditCartTypes.set('unionpay', [new RegExp('^62[0-5]\d{13,16}$', new RegExp('^[0-9]{3}$'), true]);
+                            Validation.creditCartTypes.set('unionpay', [new RegExp('^62[0-5]\d{13,16}$'), new RegExp('^[0-9]{3}$'), true]);
                         </script>]]>
                     </text>
                 </action>

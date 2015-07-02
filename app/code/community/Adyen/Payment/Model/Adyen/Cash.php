@@ -55,6 +55,25 @@ class Adyen_Payment_Model_Adyen_Cash extends Adyen_Payment_Model_Adyen_Abstract 
         parent::__construct();
     }
 
+    /*
+     * Check if IP filter is active
+     */
+    public function isAvailable($quote = null)
+    {
+        $isAvailable = parent::isAvailable($quote);
+        // check if ip range is enabled
+        $ipFilter = $this->_getConfigData('ip_filter', 'adyen_cash');
+
+        if($isAvailable && $ipFilter) {
+            // check if ip is in range
+            $ip =  Mage::helper('adyen')->getClientIp();
+            $from =  $this->_getConfigData('ip_filter_from', 'adyen_cash');
+            $to =  $this->_getConfigData('ip_filter_to', 'adyen_cash');
+            $isAvailable = Mage::helper('adyen')->ipInRange($ip, $from, $to);
+        }
+        return $isAvailable;
+    }
+
     public function assignData($data)
     {
 
