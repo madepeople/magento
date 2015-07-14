@@ -15,6 +15,18 @@ But you can also request or suggest new features or code changes yourself!
 You can create issues on our Magento Repository or if you have some specific problems for your account you can contact <a href="mailto:magento@adyen.com">magento@adyen.com</a>  as well.
 
 <h2>Current Release</h2>
+<h3>2.3.1</h3>
+<h4>Features</h4>
+* #331 Add full support to partial gift cards payments
+
+<h4>Hotfixes</h4>
+* #325 Refund sends refund request with wrong currency to Adyen if you are using a multicurrency setup
+* #329 Remove validation on Notification for HPP payments
+* #333 Missing closing ) of Javascript function
+* #341 Put back the IP version check for Adyen POS and added it for adyen cash
+* #349 Content-Type headers need to be cleared for use with php-fpm / nginx.
+
+<h2>Previous Releases</h2>
 <h3>2.3.0</h3>
 <h4>Features</h4>
 * #225 HPP payment methods now are generated as seperate payment methods inside Magento
@@ -58,7 +70,6 @@ You can create issues on our Magento Repository or if you have some specific pro
 * #187 Pre fill email in POS express checkout if Payment failes
 * #79 Added option to disable Klarna after first Klarna payment failed
 
-<h2>Previous Releases</h2>
 <h3>2.2.2</h3>
 <h4>Features</h4>
 * #220 Added only Authorization with success true to the notification queue

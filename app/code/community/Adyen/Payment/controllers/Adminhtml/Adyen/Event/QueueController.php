@@ -72,7 +72,7 @@ class Adyen_Payment_Adminhtml_Adyen_Event_QueueController extends Mage_Adminhtml
             $order->loadByIncrementId($incrementId);
 
             // process it
-            Mage::getModel('adyen/process')->_processNotifications($order, $varienObj);
+            Mage::getModel('adyen/processNotification')->updateOrder($order, $varienObj);
 
             // remove it from queue
             $eventQueue->delete();

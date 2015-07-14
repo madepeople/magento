@@ -147,6 +147,15 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
     protected $_klarnaReservationNumber;
     protected $_fraudManualReview;
 
+
+    /**
+     * @desc a public function for updateOrder to update a specific from the QueueController
+     * @param $order
+     * @param $params
+     */
+    public function updateOrder($order, $params) {
+        $this->_updateOrder($order, $params);
+    }
     /**
      * @param $order
      * @param $params
