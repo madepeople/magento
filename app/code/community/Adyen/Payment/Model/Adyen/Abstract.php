@@ -585,6 +585,9 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
             return false;
         }
         if (!is_null($quote)) {
+            if ($quote->getGrandTotal() == 0) {
+                return false;
+            }
             if ($this->_getConfigData('allowspecific', $this->_code)) {
                 $country = $quote->getShippingAddress()->getCountry();
                 $availableCountries = explode(',', $this->_getConfigData('specificcountry', $this->_code));
