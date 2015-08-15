@@ -34,6 +34,13 @@ class Adyen_Payment_Model_Observer {
         if(Mage::app()->getStore()->isAdmin()) {
             $store = Mage::getSingleton('adminhtml/session_quote')->getStore();
         } else {
+            $action = $observer->getControllerAction();
+            $request = $action->getRequest();
+            if (!in_array($request->getModuleName(), array('streamcheckout', 'checkout'))) {
+                // Don't waste performance all over the place
+                return;
+            }
+
             $store = Mage::app()->getStore();
         }
 
