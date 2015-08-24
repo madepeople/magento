@@ -27,8 +27,22 @@
  */
 class Adyen_Payment_Block_Adminhtml_Sales_Order_Filter_Adyen extends Mage_Adminhtml_Block_Widget_Grid_Column_Filter_Select {
 
+    const EVENT_CODES_CACHE_KEY = 'adyen_event_codes';
+
     protected function _getOptions() {
-        $events = Mage::getResourceModel('adyen/adyen_event')->getAllDistinctEvents();
+        $events = Mage::app()->getCache()->load(self::EVENT_CODES_CACHE_KEY);
+        if ($events === false) {
+            $events = Mage::getResourceModel('adyen/adyen_event')->getAllDistinctEvents();
+            Mage::app()->getCache()->save(
+                serialize($events),
+                self::EVENT_CODES_CACHE_KEY,
+                array(Mage_Core_Model_Config::CACHE_TAG),
+                3600 // Cache for an hour
+            );
+        } else {
+            $events = unserialize($events);
+        }
+
         $select = array(
             array('label' => '', 'value' => ''),
             array('label' => 'N.A', 'value' => 'N.A'),
