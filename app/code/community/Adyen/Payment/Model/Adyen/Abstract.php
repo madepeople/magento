@@ -77,7 +77,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
     protected $_paymentMethodType = 'api';
 
     public function getPaymentMethodType() {
-        return $this->$_paymentMethodType;
+        return $this->_paymentMethodType;
     }
 
     /**

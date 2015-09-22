@@ -38,7 +38,7 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
     protected $_paymentMethodType = 'hpp';
 
     public function getPaymentMethodType() {
-        return $this->$_paymentMethodType;
+        return $this->_paymentMethodType;
     }
 
     /**

@@ -42,7 +42,7 @@ class Adyen_Payment_Model_Adyen_Pos extends Adyen_Payment_Model_Adyen_Abstract {
     protected $_paymentMethodType = 'pos';
 
     public function getPaymentMethodType() {
-        return $this->$_paymentMethodType;
+        return $this->_paymentMethodType;
     }
 
     /*
