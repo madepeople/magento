@@ -162,6 +162,11 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
      */
     protected function _updateOrder($order, $params)
     {
+        if (!($order->getPayment()->getMethodInstance() instanceof Adyen_Payment_Model_Adyen_Abstract)) {
+            // This method only applies to Adyen orders
+            return;
+        }
+
         $this->_debugData['_updateOrder'] = 'Updating the order';
 
         Mage::dispatchEvent('adyen_payment_process_notifications_before', array('order' => $order, 'adyen_response' => $params));
@@ -191,7 +196,10 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
                     if($this->_pspReference == $order->getPayment()->getAdyenPspReference()) {
                         // don't cancel the order if previous state is authorisation with success=true
                         if($previousAdyenEventCode != "AUTHORISATION : TRUE") {
-                            $this->_holdCancelOrder($order, false);
+                            // This has been disabled because in the case of Magento, no order
+                            // exists at the time an API (like CC) notification occurs. It is
+                            // however relevant for HPP methods
+                            //$this->_holdCancelOrder($order, false);
                         } else {
                             $order->setAdyenEventCode($previousAdyenEventCode); // do not update the adyenEventCode
                             $this->_debugData['_updateOrder warning'] = 'order is not cancelled because previous notification was a authorisation that succeeded';
@@ -866,7 +874,7 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
     }
 
     protected function _getPaymentMethodType($order) {
-        return $order->getPayment()->getPaymentMethodType();
+        return $order->getPayment()->getMethodInstance()->getPaymentMethodType();
     }
 
     /**
