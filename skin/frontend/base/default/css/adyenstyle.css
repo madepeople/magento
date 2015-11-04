@@ -39,7 +39,21 @@
 
 /*.sp-methods #payment_form_adyen_cc .v-fix label { float:none; vertical-align: middle;}*/
 
-.adyen-payment-method-icon { margin-right: 6px; margin-left:2px; border:none !important; width:66px; height:43px; background:url(../images/adyen/pm_gloss.png) left top no-repeat; }
+
+.adyen-payment-method-icon { margin-right: 6px; margin-left:2px; border:none !important; width:66px; height:43px; }
+
+.adyen-payment-method-icon.adyen_cc,
+.adyen-payment-method-icon.adyen_boleto,
+.adyen-payment-method-icon.adyen_elv,
+.adyen-payment-method-icon.adyen_openinvoice_afterpay_default,
+.adyen-payment-method-icon.adyen_openinvoice_klarna,
+.adyen-payment-method-icon.adyen_pos,
+.adyen-payment-method-icon.adyen_sepa,
+.adyen-payment-method-icon.adyen_ideal,
+.adyen-payment-method-icon .no-mc∂∂∂
+{  background:url(../images/adyen/pm_gloss.png) left top no-repeat; }
+
+
 .adyen-payment-method-icon.adyen_cc { background-position: 0 -272px; }
 .adyen-payment-method-icon.adyen_boleto { background-position: 0 -2092px; }
 .adyen-payment-method-icon.adyen_elv {background-position: 0 -2000px; }
