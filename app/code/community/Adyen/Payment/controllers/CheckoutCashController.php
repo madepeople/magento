@@ -90,7 +90,7 @@ class Adyen_Payment_CheckoutCashController extends Mage_Core_Controller_Front_Ac
 
                 if($cashDrawerIp != '' && $cashDrawerPort != '' && $cashDrawerDeviceId != '') {
 
-                    $html = '<html><head><link rel="stylesheet" type="text/css" href="'.Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN).'/frontend/base/default/css/adyenstyle.css"><script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>';
+                    $html = '<html><head><link rel="stylesheet" type="text/css" href="'.Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN).'/frontend/base/default/css/adyenstyle.css"><script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>';
 
                     // for cash add epson libary to open the cash drawer
                     $jsPath = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS);

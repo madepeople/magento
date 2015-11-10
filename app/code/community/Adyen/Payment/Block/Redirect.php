@@ -54,7 +54,7 @@ class Adyen_Payment_Block_Redirect extends Mage_Core_Block_Abstract {
         $paymentObject = $order->getPayment();
         $payment = $order->getPayment()->getMethodInstance();
 
-        $html = '<html><head><link rel="stylesheet" type="text/css" href="'.Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN).'/frontend/base/default/css/adyenstyle.css"><script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>';
+        $html = '<html><head><link rel="stylesheet" type="text/css" href="'.Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN).'/frontend/base/default/css/adyenstyle.css"><script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>';
 
         // for cash add epson libary to open the cash drawer
         $cashDrawer = $this->_getConfigData("cash_drawer", "adyen_pos", null);
