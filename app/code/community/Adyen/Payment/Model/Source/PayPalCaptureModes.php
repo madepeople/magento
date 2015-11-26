@@ -29,9 +29,8 @@ class Adyen_Payment_Model_Source_PayPalCaptureModes {
 
     public function toOptionArray() {
         return array(
-            array('value' => '', 'label' => 'Default'),
-            array('value' => 'auto', 'label' => 'Auto Capture'),
-            array('value' => 'manual', 'label' => 'Manual Capture')
+            array('value' => 'auto', 'label' => 'No'),
+            array('value' => 'manual', 'label' => 'Yes')
         );
     }
 

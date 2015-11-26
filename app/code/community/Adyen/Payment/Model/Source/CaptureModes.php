@@ -29,8 +29,8 @@ class Adyen_Payment_Model_Source_CaptureModes {
 
     public function toOptionArray() {
         return array(
-            array('value' => 'auto', 'label' => 'Auto Capture'),
-            array('value' => 'manual', 'label' => 'Manual Capture'),
+            array('value' => 'auto', 'label' => 'immediate'),
+            array('value' => 'manual', 'label' => 'manual'),
         );
     }
 

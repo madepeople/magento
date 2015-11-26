@@ -25,6 +25,10 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
+
+/**
+ * @method Adyen_Payment_Model_Adyen_Oneclick getMethod()
+ */
 class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
 
     protected function _construct() {
@@ -32,6 +36,10 @@ class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
         $this->setTemplate('adyen/form/oneclick.phtml');
     }
 
+
+    /**
+     * @return mixed|string
+     */
     public function getMethodLabelAfterHtml()
     {
         $adyenHelper = Mage::helper('adyen');
@@ -42,18 +50,16 @@ class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
         }
 
         if (! $this->hasData('_method_label_html')) {
-            $imgFileName = substr($this->getMethod()->getCode(), 10);
 
             // get configuration of this specific payment method
             $methodCode = $this->getMethodCode();
 
-            $varient = $adyenHelper->_getConfigData('variant', $methodCode);
-            $last4digits = $adyenHelper->_getConfigData('card_number', $methodCode);
+            $variant = $adyenHelper->_getConfigData('variant', $methodCode);
 
-            $result = Mage::getDesign()->getFilename("images/adyen/{$varient}.png", array('_type' => 'skin'));
+            $result = Mage::getDesign()->getFilename("images/adyen/{$variant}.png", array('_type' => 'skin'));
 
             $imageUrl = file_exists($result)
-                ? $this->getSkinUrl("images/adyen/{$varient}.png")
+                ? $this->getSkinUrl("images/adyen/{$variant}.png")
                 : $this->getSkinUrl("images/adyen/img_trans.gif");
 
 
@@ -63,6 +69,7 @@ class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
                 'payment_method_label' => Mage::helper('adyen')->getConfigData('title', $this->getMethod()->getCode()),
                 'payment_method_class' => $this->getMethod()->getCode()
             ));
+            $labelBlock->setParentBlock($this);
 
             $this->setData('_method_label_html', $labelBlock->toHtml());
         }
@@ -70,15 +77,21 @@ class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
         return $this->getData('_method_label_html');
     }
 
-    public function getlistRecurringDetails() {
-        return $this->getMethod()->getlistRecurringDetails();
+
+    /**
+     * @return mixed
+     */
+    public function showCvc()
+    {
+        return $this->getMethod()->hasCustomerInteraction();
     }
 
-    public function isNotRecurring() {
-        return  $this->getMethod()->isNotRecurring();
-    }
 
-    public function getInstallments() {
+    /**
+     * @return mixed
+     */
+    public function getInstallments()
+    {
         $adyenHelper = Mage::helper('adyen');
         $methodCode = $this->getMethodCode();
         $ccType = $adyenHelper->_getConfigData('variant', $methodCode);
@@ -87,13 +100,12 @@ class Adyen_Payment_Block_Form_Oneclick extends Adyen_Payment_Block_Form_Cc {
         return $result;
     }
 
-    public function getRecurringDetails() {
-        if(Mage::app()->getStore()->isAdmin()) {
-            $storeId = Mage::getSingleton('adminhtml/session_quote')->getStoreId();
-        } else {
-            $storeId = Mage::app()->getStore()->getStoreId();
-        }
-        $recurringDetails = Mage::getStoreConfig("payment/".$this->getMethodCode(), $storeId);
-        return $recurringDetails;
+
+    /**
+     * @return mixed
+     */
+    public function getRecurringDetails()
+    {
+        return $this->getMethod()->getRecurringDetails();
     }
 }

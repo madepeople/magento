@@ -55,6 +55,11 @@
 
 /* Credit Cards */
 .sp-methods .form-list li.adyen_payment_creditcard_labels { margin-top:15px; }
+.sp-methods .form-list li.adyen_payment_creditcard_labels img {
+    display: block;
+    float: left;
+    margin-right: 10px;
+}
 .adyen_payment_creditcard_labels img.grey {
     -webkit-filter: grayscale(100%);
     filter: grayscale(100%);

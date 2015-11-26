@@ -37,7 +37,7 @@ class Adyen_Payment_Model_Source_Rendermode
     {
         return array(
             array('value' => self::MODE_TITLE, 'label' => Mage::helper('adyen')->__('Title')),
-            array('value' => self::MODE_TITLE_IMAGE, 'label' => Mage::helper('adyen')->__('Image + Title')),
+            array('value' => self::MODE_TITLE_IMAGE, 'label' => Mage::helper('adyen')->__('Logo + Title')),
         );
     }
 }

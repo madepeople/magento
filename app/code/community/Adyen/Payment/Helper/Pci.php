@@ -7,7 +7,7 @@
 class Adyen_Payment_Helper_Pci
 {
     /** @var array  */
-    protected static $_sensitiveDataKeys = ['holdername', 'expiryyear', 'expirymonth', 'issuenumber', 'cvc', 'number'];
+    protected static $_sensitiveDataKeys = array('holdername', 'expiryyear', 'expirymonth', 'issuenumber', 'cvc', 'number');
 
     /** @var array  */
     protected static $_sensitiveElementPatterns;

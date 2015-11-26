@@ -113,7 +113,9 @@ class Adyen_Payment_Model_Authenticate extends Mage_Core_Model_Abstract {
             }
         }
 
-        $accountCmp = strcmp($submitedMerchantAccount, $internalMerchantAccount);
+        $accountCmp = !$this->_getConfigData('multiple_merchants')
+            ? strcmp($submitedMerchantAccount, $internalMerchantAccount)
+            : 0;
         $usernameCmp = strcmp($_SERVER['PHP_AUTH_USER'], $username);
         $passwordCmp = strcmp($_SERVER['PHP_AUTH_PW'], $password);
         if ($accountCmp === 0 && $usernameCmp === 0 && $passwordCmp === 0) {

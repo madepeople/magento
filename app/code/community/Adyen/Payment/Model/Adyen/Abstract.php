@@ -33,6 +33,10 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
      */
     const DEBUG_LEVEL = 7;
 
+    const VISIBLE_INTERNAL = 'backend';
+    const VISIBLE_CHECKOUT = 'frontend';
+    const VISIBLE_BOTH     = 'both';
+
     protected $_isGateway = false;
     protected $_canAuthorize = true;
     protected $_canCapture = true;
@@ -73,16 +77,38 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
     protected $_optionalData = NULL;
     protected $_testModificationUrl = 'https://pal-test.adyen.com/pal/adapter/httppost';
     protected $_liveModificationUrl = 'https://pal-live.adyen.com/pal/adapter/httppost';
-
     protected $_paymentMethodType = 'api';
 
     public function getPaymentMethodType() {
         return $this->_paymentMethodType;
     }
 
+    public function __construct()
+    {
+        $visibleType = $this->getConfigData('visible_type');
+        switch ($visibleType) {
+            case self::VISIBLE_INTERNAL:
+                $this->_canUseCheckout = false;
+                $this->_canUseInternal = true;
+                break;
+
+            case self::VISIBLE_CHECKOUT:
+                $this->_canUseCheckout = true;
+                $this->_canUseInternal = false;
+                break;
+
+            case self::VISIBLE_BOTH:
+                $this->_canUseCheckout = true;
+                $this->_canUseInternal = true;
+                break;
+        }
+    }
+
+
     /**
      * @param Varien_Object $payment
-     * @param unknown_type $amount
+     * @param float         $amount
+     * @return $this
      */
     public function refund(Varien_Object $payment, $amount) {
         $this->writeLog('refund fx called');
@@ -105,19 +131,28 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
     /**
      * In the backend it means Authorize only
      * @param Varien_Object $payment
-     * @param unknown_type $amount
+     * @param               $amount
+     * @return $this
      */
     public function authorize(Varien_Object $payment, $amount) {
         parent::authorize($payment, $amount);
         $payment->setLastTransId($this->getTransactionId())->setIsTransactionPending(true);
 
         $order = $payment->getOrder();
+
+        // by zero authentication payment is authorised when api responds is succesfull
+        if($order->getGrandTotal() == 0) {
+            $payment->setIsTransactionPending(false);
+        }
+
         /*
          * Do not send a email notification when order is created.
          * Only do this on the AUHTORISATION notification.
-         * This is needed for old versions where there is no check if email is already send
+         * For Boleto send it on order creation
          */
-        $order->setCanSendNewEmailFlag(false);
+        if($this->getCode() != 'adyen_boleto') {
+            $order->setCanSendNewEmailFlag(false);
+        }
 
         if ($this->getCode() == 'adyen_boleto' || $this->getCode() == 'adyen_cc' || substr($this->getCode(), 0, 14) == 'adyen_oneclick' || $this->getCode() == 'adyen_elv' || $this->getCode() == 'adyen_sepa') {
 
@@ -217,6 +252,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         $this->_initService($storeId);
         $merchantAccount = trim($this->_getConfigData('merchantAccount', 'adyen_abstract', $storeId));
         $recurringType = $this->_getConfigData('recurringtypes', 'adyen_abstract', $storeId);
+        $recurringPaymentType = $this->_getConfigData('recurring_payment_type', 'adyen_oneclick', $storeId);
         $enableMoto = (int) $this->_getConfigData('enable_moto', 'adyen_cc', $storeId);
         $modificationResult = Mage::getModel('adyen/adyen_data_modificationResult');
         $requestData = Mage::getModel('adyen/adyen_data_modificationRequest')
@@ -225,7 +261,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         switch ($request) {
             case "authorise":
                 $requestData = Mage::getModel('adyen/adyen_data_paymentRequest')
-                    ->create($payment, $amount, $this->_paymentMethod, $merchantAccount,$recurringType, $enableMoto);
+                    ->create($payment, $amount, $this->_paymentMethod, $merchantAccount,$recurringType, $recurringPaymentType, $enableMoto);
 
                 $response = $this->_service->authorise(array('paymentRequest' => $requestData));
                 break;
@@ -252,7 +288,18 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                 break;
         }
 
+
+        // log the request
+        Mage::getResourceModel('adyen/adyen_debug')->assignData($response);
+        $this->_debugAdyen();
+        Mage::log($this->_pci()->obscureSensitiveData($requestData), self::DEBUG_LEVEL, "$request.log", true);
+
+
         if (!empty($response)) {
+            // log the result
+            Mage::log("Response from Adyen:", self::DEBUG_LEVEL, "$request.log", true);
+            Mage::log($this->_pci()->obscureSensitiveData($response), self::DEBUG_LEVEL, "$request.log", true);
+
             $this->_processResponse($payment, $response, $request);
         }
 
@@ -262,34 +309,19 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         $cacheKey = $merchantAccount . "|" . $payment->getOrder()->getCustomerId() . "|" . $recurringType;
         Mage::app()->getCache()->remove($cacheKey);
 
-        //debug || log
-        Mage::getResourceModel('adyen/adyen_debug')->assignData($response);
-        $this->_debugAdyen();
-        Mage::log($this->_pci()->obscureSensitiveData($requestData), self::DEBUG_LEVEL, "$request.log", true);
-        Mage::log("Response from Adyen:", self::DEBUG_LEVEL, "$request.log", true);
-        Mage::log($this->_pci()->obscureSensitiveData($response), self::DEBUG_LEVEL, "$request.log", true);
-
         //return $this;
         return $response;
-    }
-
-    protected function _processRecurringRequest($customerId) {
-
-        $this->_initService();
-
-        // customerId
-        $merchantAccount = trim($this->_getConfigData('merchantAccount'));
-        $recurringType = $this->_getConfigData('recurringtypes', 'adyen_abstract');
-
-        // call to helper
-        return Mage::helper('adyen')->getRecurringCards($merchantAccount, $customerId, $recurringType);
     }
 
     /**
      * @desc authorise response
      * Process the response of the soap
+     *
      * @param Varien_Object $payment
-     * @param unknown_type $response
+     * @param stdClass      $response
+     * @param null          $request
+     *
+     * @return $this
      * @todo Add comment with checkout Authorised
      */
     protected function _processResponse(Varien_Object $payment, $response, $request = null) {
@@ -323,11 +355,11 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                 $pspReference = $response->captureResult->pspReference;
                 break;
             default:
+                $responseCode = null;
                 $this->writeLog("Unknown data type by Adyen");
                 break;
         }
         switch ($responseCode) {
-
             case "RedirectShopper":
                 $payment->setAdditionalInformation('paRequest', $response->paymentResult->paRequest);
                 $payment->setAdditionalInformation('md', $response->paymentResult->md);
@@ -350,6 +382,9 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                         case "Restricted Card":
                             $errorMsg = Mage::helper('adyen')->__('The card is restricted.');
                             break;
+                        case "803 PaymentDetail not found":
+                            $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED because the saved card is removed. Please try an other payment method.');
+                            break;
                         default:
                             $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED by Adyen.');
                             break;
@@ -358,7 +393,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                     $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED by Adyen.');
                 }
 
-                Mage::throwException($errorMsg);
+                Adyen_Payment_Exception::throwException($errorMsg);
                 break;
             case "Authorised":
                 $this->_addStatusHistory($payment, $responseCode, $pspReference, $this->_getConfigData('order_status'));
@@ -380,7 +415,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                 break;
             case "Error":
                 $errorMsg = Mage::helper('adyen')->__('System error, please try again later');
-                Mage::throwException($errorMsg);
+                Adyen_Payment_Exception::throwException($errorMsg);
                 break;
             default:
                 $this->writeLog("Unknown data type by Adyen");
@@ -625,23 +660,6 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         return Mage::helper('adyen')->getConfigDataWsPassword($storeId);
     }
 
-    /**
-     * @since 0.0.2
-     */
-    public function getAvailableCCTypes() {
-        $types = Mage::helper('adyen')->getCcTypes();
-        $availableTypes = $this->_getConfigData('cctypes', 'adyen_cc');
-        if ($availableTypes) {
-            $availableTypes = explode(',', $availableTypes);
-            foreach ($types as $code => $name) {
-                if (!in_array($code, $availableTypes)) {
-                    unset($types[$code]);
-                }
-            }
-        }
-        return $types;
-    }
-
     public function getAvailableBoletoTypes() {
         $types = Mage::helper('adyen')->getBoletoTypes();
         $availableTypes = $this->_getConfigData('boletotypes', 'adyen_boleto');
@@ -668,4 +686,119 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         return $this;
     }
 
+    public function canCreateBillingAgreement()
+    {
+        if (! $this->_canCreateBillingAgreement) {
+            return false;
+        }
+        $recurringType = $this->_getConfigData('recurringtypes');
+        if($recurringType == "ONECLICK" || $recurringType == "ONECLICK,RECURRING") {
+            return true;
+        }
+        return false;
+    }
+
+
+    public function getBillingAgreementCollection()
+    {
+        $customerId = $this->getInfoInstance()->getQuote()->getCustomerId();
+        return Mage::getModel('adyen/billing_agreement')
+            ->getAvailableCustomerBillingAgreements($customerId)
+            ->addFieldToFilter('method_code', $this->getCode());
+    }
+
+
+    /**
+     * @return Adyen_Payment_Model_Api
+     */
+    protected function _api()
+    {
+        return Mage::getSingleton('adyen/api');
+    }
+
+    /**
+     * Create billing agreement by token specified in request
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return Exception
+     */
+    public function placeBillingAgreement(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        Mage::throwException('Not yet implemented.');
+        return $this;
+    }
+
+
+    /**
+     * Init billing agreement
+     *
+     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return Exception
+     */
+    public function initBillingAgreementToken(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        Mage::throwException('Not yet implemented.');
+        return $this;
+    }
+
+    /**
+     * Update billing agreement status
+     *
+     * @param Adyen_Payment_Model_Billing_Agreement|Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     *
+     * @return $this
+     * @throws Exception
+     * @throws Mage_Core_Exception
+     */
+    public function updateBillingAgreementStatus(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        Mage::dispatchEvent('adyen_payment_update_billing_agreement_status', array('agreement' => $agreement));
+
+        $targetStatus = $agreement->getStatus();
+        $adyenHelper = Mage::helper('adyen');
+
+        if ($targetStatus == Mage_Sales_Model_Billing_Agreement::STATUS_CANCELED) {
+            try {
+                $this->_api()->disableRecurringContract(
+                    $agreement->getReferenceId(),
+                    $agreement->getCustomerReference(),
+                    $agreement->getStoreId()
+                );
+            } catch (Adyen_Payment_Exception $e) {
+                Mage::throwException($adyenHelper->__(
+                    "Error while disabling Billing Agreement #%s: %s", $agreement->getReferenceId(), $e->getMessage()
+                ));
+            }
+        } else {
+            throw new Exception(Mage::helper('adyen')->__(
+                'Changing billing agreement status to "%s" not yet implemented.', $targetStatus
+            ));
+        }
+        return $this;
+    }
+
+
+    /**
+     * Retrieve billing agreement customer details by token
+     *
+     * @param Adyen_Payment_Model_Billing_Agreement|Mage_Payment_Model_Billing_AgreementAbstract $agreement
+     * @return array
+     */
+    public function getBillingAgreementTokenInfo(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
+    {
+        $recurringContractDetail = $this->_api()->getRecurringContractDetail(
+            $agreement->getCustomerReference(),
+            $agreement->getReferenceId()
+        );
+
+        if (! $recurringContractDetail) {
+            Adyen_Payment_Exception::throwException(Mage::helper('adyen')->__(
+                'The recurring contract (%s) could not be retrieved', $agreement->getReferenceId()
+            ));
+        }
+
+        $agreement->parseRecurringContractData($recurringContractDetail);
+
+        return $recurringContractDetail;
+    }
 }

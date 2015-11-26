@@ -25,31 +25,14 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
-class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract {
+class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract
+    implements Mage_Payment_Model_Billing_Agreement_MethodInterface {
 
     protected $_code = 'adyen_sepa';
     protected $_formBlockType = 'adyen/form_sepa';
     protected $_infoBlockType = 'adyen/info_sepa';
     protected $_paymentMethod = 'sepa';
-    protected $_canUseCheckout = true;
-    protected $_canUseInternal = true;
-    protected $_canUseForMultishipping = true;
-
-    public function __construct()
-    {
-        $visible = Mage::getStoreConfig("payment/adyen_sepa/visible_type");
-        if($visible == "backend") {
-            $this->_canUseCheckout = false;
-            $this->_canUseInternal = true;
-        } else if($visible == "frontend") {
-            $this->_canUseCheckout = true;
-            $this->_canUseInternal = false;
-        } else {
-            $this->_canUseCheckout = true;
-            $this->_canUseInternal = true;
-        }
-        parent::__construct();
-    }
+    protected $_canCreateBillingAgreement = true;
 
     /**
      * 1)Called everytime the adyen_sepa is called or used in checkout
@@ -68,7 +51,8 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
         $sepa = array(
             'account_name' => $data->getAccountName(),
             'iban' => $data->getIban(),
-            'country' => $data->getCountry()
+            'country' => $data->getCountry(),
+            'accept_sepa' => $data->getAcceptSepa()
         );
 
         $info = $this->getInfoInstance();
@@ -78,6 +62,7 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
                 ->setCcNumber($data->getAccountNumber())
                 ->setCcNumberEnc($data->getBankCode())
                 ->setPoNumber(serialize($sepa)); /* @note misused field for the elv */
+
         return $this;
     }
 
@@ -85,13 +70,17 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
     {
         parent::validate();
 
+        $info = $this->getInfoInstance();
+        $sepa = unserialize($info->getPoNumber());
+
+        if(!$sepa['accept_sepa']) {
+            $errorMsg = Mage::helper('adyen')->__('Please accept the conditions for a SEPA direct debit.');
+            Mage::throwException($errorMsg);
+        }
         // check if validator is on
         $ibanValidation = $this->_getConfigData("validate_iban", "adyen_sepa");
 
         if($ibanValidation) {
-
-            $info = $this->getInfoInstance();
-            $sepa = unserialize($info->getPoNumber());
 
             if(!$this->validateIban($sepa['iban']) || empty($sepa['iban'])){
                 $errorCode = 'invalid_data';
@@ -144,94 +133,15 @@ class Adyen_Payment_Model_Adyen_Sepa extends Adyen_Payment_Model_Adyen_Abstract 
         parent::prepareSave();
     }
 
-    public function getBillingAgreementCollection()
-    {
-        return Mage::getResourceModel('sales/billing_agreement_collection')
-            ->addFieldToFilter('customer_id', $this->getInfoInstance()->getQuote()->getCustomerId())
-            ->addFieldToFilter('status', 'active')
-            ->addFieldToFilter('method_code', $this->getCode());
+    public function canCreateAdyenSubscription() {
+
+        // validate if recurringType is correctly configured
+        $recurringType = $this->_getConfigData('recurringtypes', 'adyen_abstract');
+        if($recurringType == "RECURRING" || $recurringType == "ONECLICK,RECURRING") {
+            return true;
+        }
+        return false;
+
+        // TODO: add config where merchant can set the payment types that are available for subscription
     }
-
-    /**
-     * Init billing agreement
-     *
-     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
-     * @return $this
-     */
-    public function initBillingAgreementToken(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
-    {
-        $agreement->setRedirectUrl(
-            Mage::getUrl('*/*/returnWizard', array('payment_method' => $this->getCode(), 'token' => uniqid('t')))
-        );
-        return $this;
-    }
-
-
-    /**
-     * Retrieve billing agreement details
-     *
-     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
-     * @return $this
-     */
-    public function getBillingAgreementTokenInfo(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
-    {
-
-        return $this;
-    }
-
-
-    /**
-     * Create billing agreement
-     *
-     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreement
-     * @return $this
-     */
-    public function placeBillingAgreement(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
-    {
-        $agreement->setBillingAgreementId('SEPA12345');
-        return $this;
-    }
-
-
-    /**
-     * Update billing agreement status
-     *
-     * @param Mage_Payment_Model_Billing_AgreementAbstract $agreeme*
-     * @return $this
-     nt
-     */
-    public function updateBillingAgreementStatus(Mage_Payment_Model_Billing_AgreementAbstract $agreement)
-    {
-        return $this;
-    }
-
-//    public function validateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile)
-//    {
-//        return true;
-//    }
-//
-//    public function submitRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile, Mage_Payment_Model_Info $paymentInfo)
-//    {
-//
-//    }
-//
-//    public function getRecurringProfileDetails($referenceId, Varien_Object $result)
-//    {
-//
-//    }
-//
-//    public function canGetRecurringProfileDetails()
-//    {
-//        return false;
-//    }
-//
-//    public function updateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile)
-//    {
-//
-//    }
-//
-//    public function updateRecurringProfileStatus(Mage_Payment_Model_Recurring_Profile $profile)
-//    {
-//
-//    }
 }

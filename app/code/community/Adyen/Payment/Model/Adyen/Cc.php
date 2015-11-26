@@ -25,37 +25,18 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
-class Adyen_Payment_Model_Adyen_Cc extends Adyen_Payment_Model_Adyen_Abstract {
+class Adyen_Payment_Model_Adyen_Cc extends Adyen_Payment_Model_Adyen_Abstract
+    implements Mage_Payment_Model_Billing_Agreement_MethodInterface {
 
     protected $_code = 'adyen_cc';
     protected $_formBlockType = 'adyen/form_cc';
     protected $_infoBlockType = 'adyen/info_cc';
     protected $_paymentMethod = 'cc';
-    protected $_canUseCheckout = true;
-    protected $_canUseInternal = true;
-    protected $_canUseForMultishipping = true;
-
-    public function __construct()
-    {
-        // check if this is adyen_cc payment method because this function is as well used for oneclick payments
-        if($this->getCode() == "adyen_cc") {
-            $visible = Mage::getStoreConfig("payment/adyen_cc/visible_type");
-            if($visible == "backend") {
-                $this->_canUseCheckout = false;
-                $this->_canUseInternal = true;
-            } else if($visible == "frontend") {
-                $this->_canUseCheckout = true;
-                $this->_canUseInternal = false;
-            } else {
-                $this->_canUseCheckout = true;
-                $this->_canUseInternal = true;
-            }
-        }
-        parent::__construct();
-    }
+    protected $_canCreateBillingAgreement = true;
+    protected $_ccTypes;
 
     /**
-     * 1)Called everytime the adyen_cc is called or used in checkout
+     * 1) Called everytime the adyen_cc is called or used in checkout
      * @description Assign data to info model instance
      *
      * @param   mixed $data
@@ -143,14 +124,6 @@ class Adyen_Payment_Model_Adyen_Cc extends Adyen_Payment_Model_Adyen_Abstract {
         return trim(Mage::getStoreConfig("payment/adyen_cc/cse_publickey"));
     }
 
-    public function showRememberThisCheckoutbox() {
-        $recurringType = $this->_getConfigData('recurringtypes');
-        if($recurringType == "ONECLICK" || $recurringType == "ONECLICK,RECURRING") {
-            return true;
-        }
-        return false;
-    }
-
     /**
      * @desc Specific functions for 3d secure validation
      */
@@ -191,4 +164,41 @@ class Adyen_Payment_Model_Adyen_Cc extends Adyen_Payment_Model_Adyen_Abstract {
         return $adyFields;
     }
 
+    /**
+     * @desc setAvailableCCypes to remove MAESTRO as creditcard type for the Adyen_Subscription module
+     * @param $ccTypes
+     */
+    public function setAvailableCCypes($ccTypes) {
+        $this->_ccTypes = $ccTypes;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getAvailableCCTypes() {
+        if(!$this->_ccTypes) {
+            $types = Mage::helper('adyen')->getCcTypes();
+            $availableTypes = $this->_getConfigData('cctypes', 'adyen_cc');
+            if ($availableTypes) {
+                $availableTypes = explode(',', $availableTypes);
+                foreach ($types as $code => $name) {
+                    if (!in_array($code, $availableTypes)) {
+                        unset($types[$code]);
+                    }
+                }
+            }
+            $this->_ccTypes = $types;
+        }
+        return $this->_ccTypes;
+    }
+
+    public function canCreateAdyenSubscription() {
+
+        // validate if recurringType is correctly configured
+        $recurringType = $this->_getConfigData('recurringtypes', 'adyen_abstract');
+        if($recurringType == "RECURRING" || $recurringType == "ONECLICK,RECURRING") {
+            return true;
+        }
+        return false;
+    }
 }

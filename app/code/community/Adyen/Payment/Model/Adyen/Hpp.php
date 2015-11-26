@@ -224,7 +224,7 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
         ) {
             $adyFields['billingAddressType']  = "1";
             $adyFields['deliveryAddressType'] = "1";
-            $adyFields['shopperType']         = "1";
+            $adyFields['shopperType']         = "";
         } else {
             $adyFields['billingAddressType']  = "";
             $adyFields['deliveryAddressType'] = "";
@@ -367,5 +367,15 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
 
     public function getShowIdealLogos() {
         return $this->_getConfigData('show_ideal_logos', 'adyen_hpp');
+    }
+
+    public function canCreateAdyenSubscription() {
+
+        // validate if recurringType is correctly configured
+        $recurringType = $this->_getConfigData('recurringtypes', 'adyen_abstract');
+        if($recurringType == "RECURRING" || $recurringType == "ONECLICK,RECURRING") {
+            return true;
+        }
+        return false;
     }
 }

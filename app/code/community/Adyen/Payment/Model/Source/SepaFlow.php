@@ -29,7 +29,7 @@ class Adyen_Payment_Model_Source_SepaFlow {
 
     public function toOptionArray() {
         return array(
-            array('value' => 'sales', 'label' => 'Sales'),
+            array('value' => 'sales', 'label' => 'Sale'),
             array('value' => 'authcap', 'label' => 'Auth/Cap'),
         );
     }

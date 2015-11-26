@@ -82,4 +82,12 @@ class Adyen_Payment_Adminhtml_ValidateWebserverSettingsController extends Mage_A
         echo $result;
         return;
     }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('system/config/payment');
+    }
 }

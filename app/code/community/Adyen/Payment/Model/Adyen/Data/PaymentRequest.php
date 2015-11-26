@@ -65,8 +65,15 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
         $this->bankAccount = new Adyen_Payment_Model_Adyen_Data_BankAccount(); // for SEPA
     }
 
-    public function create(Varien_Object $payment, $amount, $paymentMethod = null, $merchantAccount = null, $recurringType = null, $enableMoto = null)
-    {
+    public function create(
+        Varien_Object $payment,
+        $amount,
+        $paymentMethod = null,
+        $merchantAccount = null,
+        $recurringType = null,
+        $recurringPaymentType = null,
+        $enableMoto = null
+    ) {
         $order = $payment->getOrder();
         $incrementId = $order->getIncrementId();
         $orderCurrencyCode = $order->getOrderCurrencyCode();
@@ -86,16 +93,27 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
         $this->shopperIP = $order->getRemoteIp();
         $this->shopperReference = (!empty($customerId)) ? $customerId : self::GUEST_ID . $realOrderId;
 
-        // add recurring type for oneclick and recurring
+        // Set the recurring contract
         if($recurringType) {
-
-            /* if user uncheck the checkbox store creditcard don't set ONECLICK in the recurring contract
-             * for contracttype  oneclick,recurring it means it will use recurring and if contracttype is recurring this can stay on recurring
-             */
-            if($paymentMethod == "cc" && $payment->getAdditionalInformation("store_cc") == "" && $recurringType == "ONECLICK,RECURRING") {
-                $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
-                $this->recurring->contract = "RECURRING";
-            } else if(!($paymentMethod == "cc" && $payment->getAdditionalInformation("store_cc") == "" && $recurringType != "RECURRING")) {
+            if($paymentMethod == "oneclick") {
+                // For ONECLICK look at the recurringPaymentType that the merchant has selected in Adyen ONECLICK settings
+                if($payment->getAdditionalInformation('customer_interaction')) {
+                    $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
+                    $this->recurring->contract = "ONECLICK";
+                } else {
+                    $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
+                    $this->recurring->contract = "RECURRING";
+                }
+            } elseif($paymentMethod == "cc") {
+                // if save card is disabled only shoot in as recurring if recurringType is set to ONECLICK,RECURRING
+                if($payment->getAdditionalInformation("store_cc") == "" && $recurringType == "ONECLICK,RECURRING") {
+                    $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
+                    $this->recurring->contract = "RECURRING";
+                } elseif($payment->getAdditionalInformation("store_cc") == "1") {
+                    $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
+                    $this->recurring->contract = $recurringType;
+                }
+            } else {
                 $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
                 $this->recurring->contract = $recurringType;
             }
@@ -126,14 +144,13 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 $this->shopperName = null;
             	$this->elv = null;
                 $this->bankAccount = null;
-                $this->deliveryAddress = new Adyen_Payment_Model_Adyen_Data_DeliveryAddress();
-                $this->billingAddress = new Adyen_Payment_Model_Adyen_Data_BillingAddress();
 
                 $billingAddress = $order->getBillingAddress();
                 $helper = Mage::helper('adyen');
 
                 if($billingAddress)
                 {
+                    $this->billingAddress = new Adyen_Payment_Model_Adyen_Data_BillingAddress();
                     $this->billingAddress->street = $helper->getStreet($billingAddress)->getName();
                     $this->billingAddress->houseNumberOrName = $helper->getStreet($billingAddress)->getHouseNumber();
                     $this->billingAddress->city = $billingAddress->getCity();
@@ -145,6 +162,7 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 $deliveryAddress = $order->getShippingAddress();
                 if($deliveryAddress)
                 {
+                    $this->deliveryAddress = new Adyen_Payment_Model_Adyen_Data_DeliveryAddress();
                     $this->deliveryAddress->street = $helper->getStreet($billingAddress)->getName();
                     $this->deliveryAddress->houseNumberOrName = $helper->getStreet($billingAddress)->getHouseNumber();
                     $this->deliveryAddress->city = $billingAddress->getCity();
@@ -155,18 +173,25 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
 
                 if($paymentMethod == "oneclick") {
                     $recurringDetailReference = $payment->getAdditionalInformation("recurring_detail_reference");
+
+                    if($payment->getAdditionalInformation('customer_interaction')) {
+                        $this->shopperInteraction = "Ecommerce";
+                    } else {
+                        $this->shopperInteraction = "ContAuth";
+                    }
+
+                    // For recurring Ideal and Sofort needs to be converted to SEPA for this it is mandatory to set selectBrand to sepadirectdebit
+                    if(!$payment->getAdditionalInformation('customer_interaction')) {
+                        if($payment->getCcType() == "directEbanking" || $payment->getCcType() == "ideal") {
+                            $this->selectedBrand = "sepadirectdebit";
+                        }
+                    }
                 } else {
                     $recurringDetailReference = null;
-                }
-
-                // set shopperInteraction
-                if($recurringType == "RECURRING") {
-                    $this->shopperInteraction = "ContAuth";
-                } else {
                     $this->shopperInteraction = "Ecommerce";
                 }
 
-                if($paymentMethod == "adyen_cc" && Mage::app()->getStore()->isAdmin() && $enableMoto != null && $enableMoto == 1) {
+                if($paymentMethod == "cc" && Mage::app()->getStore()->isAdmin() && $enableMoto != null && $enableMoto == 1) {
                     $this->shopperInteraction = "Moto";
                 }
 
@@ -181,9 +206,10 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
 
 				if (Mage::getModel('adyen/adyen_cc')->isCseEnabled()) {
 
+                    $this->card = null;
+
                     // this is only needed for creditcards
                     if($payment->getAdditionalInformation("encrypted_data") != "") {
-                        $this->card = null;
                         $kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
                         $kv->key = new SoapVar("card.encrypted.json", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
                         $kv->value = new SoapVar($payment->getAdditionalInformation("encrypted_data"), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");

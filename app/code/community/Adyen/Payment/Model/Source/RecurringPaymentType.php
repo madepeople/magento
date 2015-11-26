@@ -25,31 +25,20 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
+class Adyen_Payment_Model_Source_RecurringPaymentType {
 
-class Adyen_Payment_Block_SavedCards extends Mage_Core_Block_Template {
-
-
-    public function getlistRecurringDetails() {
-
-
-        $storeId = Mage::app()->getStore()->getStoreId();
-        $customer = Mage::registry('current_customer');
-        $customerId = $customer->getId();
-        $merchantAccount = Mage::getStoreConfig("payment/adyen_abstract/merchantAccount", $storeId);
-        $recurringType = Mage::getStoreConfig("payment/adyen_abstract/recurringtypes", $storeId);
-
-        return Mage::helper('adyen')->getRecurringCards($merchantAccount, $customerId, $recurringType);
-
-    }
-
-    public function getBackUrl()
-    {
-        if ($this->getRefererUrl()) {
-            return $this->getRefererUrl();
+    public function toOptionArray() {
+        $options = array();
+        foreach (Mage::helper('adyen')->getRecurringTypes() as $code => $name) {
+            // only use ONECLICK and RECURRING
+            if($code == "ONECLICK" || $code == "RECURRING") {
+                $options[] = array(
+                    'value' => $code,
+                    'label' => $name
+                );
+            }
         }
-        return $this->getUrl('customer/account/', array('_secure'=>true));
+        return $options;
     }
-
-
 
 }

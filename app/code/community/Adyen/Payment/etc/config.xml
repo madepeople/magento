@@ -29,7 +29,7 @@
 <config>
     <modules>
         <Adyen_Payment>
-            <version>2.3.1</version>
+            <version>2.4.2</version>
         </Adyen_Payment>
     </modules>
     <global>
@@ -52,6 +52,17 @@
                     </event_queue>
                 </entities>
             </adyen_resource>
+            <sales>
+                <rewrite>
+                    <billing_agreement>Adyen_Payment_Model_Billing_Agreement</billing_agreement>
+                </rewrite>
+            </sales>
+            <sales_resource>
+                <rewrite>
+                    <billing_agreement>Adyen_Payment_Model_Resource_Billing_Agreement</billing_agreement>
+                    <billing_agreement_collection>Adyen_Payment_Model_Resource_Billing_Agreement_Collection</billing_agreement_collection>
+                </rewrite>
+            </sales_resource>
         </models>
         <helpers>
             <adyen>
@@ -98,6 +109,7 @@
             <sales>
                 <rewrite>
                     <order_totals>Adyen_Payment_Block_Sales_Order_Totals</order_totals>
+                    <adminhtml_billing_agreement_grid>Adyen_Payment_Block_Adminhtml_Sales_Billing_Agreement_Grid</adminhtml_billing_agreement_grid>
                 </rewrite>
             </sales>
         </blocks>
@@ -170,12 +182,24 @@
         <events>
             <controller_action_predispatch>
                 <observers>
-                    <adyen_payment>
+                    <adyen_payment_hpp>
                         <class>adyen/observer</class>
                         <method>addMethodsToConfig</method>
-                    </adyen_payment>
+                    </adyen_payment_hpp>
+                    <adyen_payment_billing_agreement>
+                        <class>adyen/billing_agreement_observer</class>
+                        <method>addMethodsToConfig</method>
+                    </adyen_payment_billing_agreement>
                 </observers>
             </controller_action_predispatch>
+            <sales_order_shipment_save_after>
+                <observers>
+                    <adyen_payment_capture_invoice_on_shipment>
+                        <class>adyen/observer</class>
+                        <method>captureInvoiceOnShipment</method>
+                    </adyen_payment_capture_invoice_on_shipment>
+                </observers>
+            </sales_order_shipment_save_after>
         </events>
     </global>
 
@@ -269,15 +293,15 @@
                 <payment_authorized_virtual>complete</payment_authorized_virtual>
                 <payment_cancelled_redirect>checkout/cart</payment_cancelled_redirect>
                 <capture_mode>auto</capture_mode>
+                <create_pending_invoice>0</create_pending_invoice>
                 <recurringtypes>ONECLICK</recurringtypes>
                 <auto_capture_openinvoice>0</auto_capture_openinvoice>
-                <paypal_capture_mode>0</paypal_capture_mode>
+                <paypal_capture_mode>auto</paypal_capture_mode>
                 <send_email_bank_sepa_on_pending>0</send_email_bank_sepa_on_pending>
                 <title_renderer>title_image</title_renderer>
                 <ignore_refund_notification>0</ignore_refund_notification>
             </adyen_abstract>
             <adyen_hpp translate="title" module="adyen">
-                <customer_id backend_model="adminhtml/system_config_backend_encrypted"/>
                 <currency>EUR</currency>
                 <model>adyen/adyen_hpp</model>
                 <group>adyen</group>
@@ -292,8 +316,7 @@
                 <allowspecific>0</allowspecific>
                 <disable_hpptypes>0</disable_hpptypes>
                 <sort_order>30</sort_order>
-                <cache_directory_lookup>0</cache_directory_lookup>
-                <return_url_in_request>0</return_url_in_request>
+                <return_url_in_request>1</return_url_in_request>
             </adyen_hpp>
             <adyen_ideal translate="title" module="adyen">
                 <active>0</active>
@@ -328,6 +351,7 @@
                 <group>adyen</group>
                 <title>Cash</title>
                 <sort_order>90</sort_order>
+                <create_shipment>1</create_shipment>
                 <visible_type>both</visible_type>
                 <cash_express_checkout>0</cash_express_checkout>
                 <cash_drawer>0</cash_drawer>
@@ -355,7 +379,7 @@
                 <title>Adyen Credit Card</title>
                 <debug>0</debug>
                 <enable_installments>0</enable_installments>
-                <cse_enabled>0</cse_enabled>
+                <cse_enabled>1</cse_enabled>
                 <cse_public_key></cse_public_key>
                 <visible_type>both</visible_type>
                 <enable_moto>0</enable_moto>
@@ -364,6 +388,7 @@
                 <trxuser_password>0</trxuser_password>
                 <adminaction_password>5cfgRT34xsdedtFLdfHxj7tfwx24fe</adminaction_password>
                 <wsdl>https://pal-test.adyen.com/pal/Payment.wsdl</wsdl>
+                <allow_billing_agreement_wizard>0</allow_billing_agreement_wizard>
                 <sort_order>20</sort_order>
             </adyen_cc>
             <adyen_oneclick translate="title" module="adyen">
@@ -372,6 +397,7 @@
                 <group>adyen</group>
                 <title>Adyen OneClick</title>
                 <sort_order>1</sort_order>
+                <recurring_payment_type>ONECLICK</recurring_payment_type>
             </adyen_oneclick>
             <adyen_elv translate="title" module="adyen">
                 <active>0</active>
@@ -399,6 +425,7 @@
                 <title>Adyen SEPA</title>
                 <sort_order>60</sort_order>
                 <validate_iban>0</validate_iban>
+                <allow_billing_agreement_wizard>0</allow_billing_agreement_wizard>
                 <flow>sales</flow>
             </adyen_sepa>
             <adyen_pay_by_mail>
@@ -416,57 +443,75 @@
                 <cctypes>
                     <AE>
                         <code>AE</code>
+                        <code_alt>amex</code_alt>
                         <name>American Express</name>
                         <order>0</order>
                         <is_cvv_required>1</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </AE>
                     <VI>
                         <code>VI</code>
+                        <code_alt>visa</code_alt>
                         <name>Visa</name>
                         <order>10</order>
                         <is_cvv_required>1</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </VI>
                     <MC>
                         <code>MC</code>
+                        <code_alt>mc</code_alt>
                         <name>Master Card</name>
                         <order>20</order>
                         <is_cvv_required>1</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </MC>
                     <DI>
                         <code>DI</code>
+                        <code_alt>discover</code_alt>
                         <name>Discover</name>
                         <order>30</order>
                         <is_cvv_required>1</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </DI>
                     <DC>
                         <code>DC</code>
+                        <code_alt>diners</code_alt>
                         <name>Diners Club</name>
                         <order>40</order>
                         <is_cvv_required>1</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </DC>
                     <SM>
                         <code>SM</code>
+                        <code_alt>maestro</code_alt>
                         <name>Maestro</name>
                         <order>60</order>
                         <is_cvv_required>0</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </SM>
                     <JCB>
                         <code>JCB</code>
+                        <code_alt>jcb</code_alt>
                         <name>JCB</name>
                         <order>70</order>
                         <is_cvv_required>0</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </JCB>
                     <ELO>
                         <code>ELO</code>
+                        <code_alt>elo</code_alt>
                         <name>Elo</name>
                         <order>80</order>
                         <is_cvv_required>0</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </ELO>
                     <hipercard>
                         <code>hipercard</code>
+                        <code_alt>hipercard</code_alt>
                         <name>Hipercard</name>
                         <order>90</order>
                         <is_cvv_required>0</is_cvv_required>
+                        <is_checkout>1</is_checkout>
                     </hipercard>
                 </cctypes>
                 <boletotypes>

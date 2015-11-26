@@ -44,43 +44,16 @@ class Adyen_Payment_Model_Observer {
             $store = Mage::app()->getStore();
         }
 
-        // Add OneClick payment methods
-        if (Mage::getStoreConfigFlag('payment/adyen_oneclick/active', $store)) {
-            try {
-                $this->_addOneClickMethodsToConfig($store);
-            } catch (Exception $e) {
-                $store->setConfig('payment/adyen_oneclick/active', 0);
-                Mage::logException($e);
-            }
-        }
-
         if (Mage::getStoreConfigFlag('payment/adyen_hpp/active', $store)) {
             try {
                 $this->_addHppMethodsToConfig($store);
             } catch (Exception $e) {
                 $store->setConfig('payment/adyen_hpp/active', 0);
-                Mage::logException($e);
+                Adyen_Payment_Exception::logException($e);
             }
         }
     }
 
-    /**
-     * @param Mage_Core_Model_Store $store
-     */
-    protected function _addOneClickMethodsToConfig(Mage_Core_Model_Store $store)
-    {
-        Varien_Profiler::start(__CLASS__.'::'.__FUNCTION__);
-
-        // Adyen CC needs to be active
-        if(Mage::getStoreConfigFlag('payment/adyen_cc/active', $store)) {
-            foreach ($this->_fetchOneClickMethods($store) as $methodCode => $methodData) {
-                $this->createPaymentMethodFromOneClick($methodCode, $methodData, $store);
-            }
-        }
-        $store->setConfig('payment/adyen_oneclick/active', 0);
-
-        Varien_Profiler::stop(__CLASS__.'::'.__FUNCTION__);
-    }
 
 
     /**
@@ -103,26 +76,6 @@ class Adyen_Payment_Model_Observer {
         }
 
         Varien_Profiler::stop(__CLASS__.'::'.__FUNCTION__);
-    }
-
-
-    /**
-     * @param string $methodCode ideal,mc,etc.
-     * @param array $methodData
-     */
-    public function createPaymentMethodFromOneClick($methodCode, $methodData = array(), Mage_Core_Model_Store $store)
-    {
-
-        $methodNewCode = 'adyen_oneclick_'.$methodCode;
-
-        $methodData = $methodData + Mage::getStoreConfig('payment/adyen_oneclick', $store);
-        $methodData['model'] = 'adyen/adyen_oneclick';
-
-        foreach ($methodData as $key => $value) {
-            $store->setConfig('payment/'.$methodNewCode.'/'.$key, $value);
-        }
-
-        $store->setConfig('payment/adyen_oneclick/active', 0);
     }
 
     /**
@@ -154,59 +107,13 @@ class Adyen_Payment_Model_Observer {
      * @param Mage_Core_Model_Store $store
      * @return array
      */
-    protected function _fetchOneClickMethods(Mage_Core_Model_Store $store)
-    {
-        $adyenHelper = Mage::helper('adyen');
-        $paymentMethods = array();
-
-        $merchantAccount = trim($adyenHelper->getConfigData('merchantAccount', 'adyen_abstract', $store->getId()));
-
-        if(Mage::app()->getStore()->isAdmin()) {
-            $customerId = Mage::getSingleton('adminhtml/session_quote')->getCustomerId();
-        } else if($customer = Mage::getSingleton('customer/session')->isLoggedIn()) {
-            $customerData = Mage::getSingleton('customer/session')->getCustomer();
-            $customerId = $customerData->getId();
-        } else {
-            // not logged in so has no cards
-            return array();
-        }
-
-        $recurringType = $adyenHelper->getConfigData('recurringtypes', 'adyen_abstract', $store->getId());
-        $recurringCards = $adyenHelper->getRecurringCards($merchantAccount, $customerId, $recurringType);
-
-        $paymentMethods = array();
-        foreach ($recurringCards as $key => $paymentMethod) {
-
-            $paymentMethodCode = $paymentMethod['recurringDetailReference'];
-            $paymentMethods[$paymentMethodCode] = $paymentMethod;
-
-            if($paymentMethod['variant'] == 'sepadirectdebit' || $paymentMethod['variant'] == 'ideal' || $paymentMethod['variant'] == 'openinvoice') {
-                $paymentMethods[$paymentMethodCode]['title'] = $paymentMethod['bank_ownerName'] ;
-            } else if($paymentMethod['variant'] == 'elv') {
-                $paymentMethods[$paymentMethodCode]['title'] = $paymentMethod['elv_accountHolderName'] ;
-            } else if(isset($paymentMethod["card_holderName"]) && isset($paymentMethod['card_number'])) {
-                $paymentMethods[$paymentMethodCode]['title'] = $paymentMethod["card_holderName"] . " **** " . $paymentMethod['card_number'];
-            } else {
-                // for now ignore PayPal and Klarna because we have no information on what account this is linked to. You will only get these back when you have recurring enabled
-//                    $paymentMethods[$paymentMethodCode]['title'] = Mage::helper('adyen')->__('Saved Card') . " " . $paymentMethod["variant"];
-                unset($paymentMethods[$paymentMethodCode]);
-            }
-        }
-
-        return $paymentMethods;
-    }
-
-    /**
-     * @param Mage_Core_Model_Store $store
-     * @return array
-     */
     protected function _fetchHppMethods(Mage_Core_Model_Store $store)
     {
         $adyenHelper = Mage::helper('adyen');
 
+        $skinCode          = $adyenHelper->getConfigData('skinCode', 'adyen_hpp', $store->getId());
+        $merchantAccount   = $adyenHelper->getConfigData('merchantAccount', null, $store->getId());
 
-        $skinCode          = $adyenHelper->getConfigData('skinCode', 'adyen_hpp', $store);
-        $merchantAccount   = $adyenHelper->getConfigData('merchantAccount', null, $store);
         if (!$skinCode || !$merchantAccount) {
             return array();
         }
@@ -221,12 +128,14 @@ class Adyen_Payment_Model_Observer {
                 DATE_ATOM,
                 mktime(date("H") + 1, date("i"), date("s"), date("m"), date("j"), date("Y"))
             ),
-            "countryCode"       => $this->_getCurrentCountryCode(),
-            "shopperLocale"     => Mage::app()->getLocale()->getLocaleCode()
+            "countryCode"       => $this->_getCurrentCountryCode($adyenHelper, $store),
+            "shopperLocale"     => $this->_getCurrentLocaleCode($adyenHelper, $store)
         );
         $responseData = $this->_getDirectoryLookupResponse($adyFields, $store);
 
         $paymentMethods = array();
+        $ccTypes = array_keys(Mage::helper('adyen')->getCcTypesAltData());
+
         foreach ($responseData['paymentMethods'] as $paymentMethod) {
             $paymentMethod = $this->_fieldMapPaymentMethod($paymentMethod);
             $paymentMethodCode = $paymentMethod['brandCode'];
@@ -238,7 +147,7 @@ class Adyen_Payment_Model_Observer {
             }
 
             if (Mage::getStoreConfigFlag('payment/adyen_cc/active')
-                && in_array($paymentMethodCode, array('diners','discover','amex','mc','visa','maestro'))) {
+                && in_array($paymentMethodCode, $ccTypes)) {
                 continue;
             }
 
@@ -277,8 +186,13 @@ class Adyen_Payment_Model_Observer {
     /**
      * @return string
      */
-    protected function _getCurrentLocaleCode()
+    protected function _getCurrentLocaleCode($adyenHelper, $store)
     {
+        $localeCode = $adyenHelper->getConfigData('shopperlocale', 'adyen_abstract', $store->getId());
+        if($localeCode != "") {
+            return $localeCode;
+        }
+
         return Mage::app()->getLocale()->getLocaleCode();
     }
 
@@ -295,8 +209,15 @@ class Adyen_Payment_Model_Observer {
     /**
      * @return string
      */
-    protected function _getCurrentCountryCode()
+    protected function _getCurrentCountryCode($adyenHelper, $store)
     {
+        // if fixed countryCode is setup in config use this
+        $countryCode = $adyenHelper->getConfigData('countryCode', 'adyen_abstract', $store->getId());
+
+        if($countryCode != "") {
+            return $countryCode;
+        }
+
         $billingParams = Mage::app()->getRequest()->getParam('billing');
         if (isset($billingParams['country_id'])) {
             return $billingParams['country_id'];
@@ -310,9 +231,12 @@ class Adyen_Payment_Model_Observer {
             return Mage::getStoreConfig('payment/account/merchant_country');
         }
 
+        if (Mage::getStoreConfig('general/country/default')) {
+            return Mage::getStoreConfig('general/country/default');
+        }
+
         return null;
     }
-
 
     /**
      * @return bool|int
@@ -373,7 +297,7 @@ class Adyen_Payment_Model_Observer {
         $responseData = json_decode($results, true);
         if (! $responseData || !isset($responseData['paymentMethods'])) {
             Mage::throwException(Mage::helper('adyen')->__(
-                'Did not receive JSON, could not retrieve payment methods, received %s', $results
+                'Did not receive JSON, could not retrieve payment methods, received %s request was: %s', $results, print_r($requestParams, true)
             ));
         }
 
@@ -536,5 +460,69 @@ class Adyen_Payment_Model_Observer {
     public function isPaymentMethodAdyen(Mage_Sales_Model_Order $order)
     {
         return strpos($order->getPayment()->getMethod(), 'adyen') !== false;
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function captureInvoiceOnShipment(Varien_Event_Observer $observer)
+    {
+
+        /* @noinspection PhpUndefinedMethodInspection */
+        /* @var Mage_Sales_Model_Order_Shipment $shipment */
+        $shipment = $observer->getShipment();
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $shipment->getOrder();
+
+        $adyenHelper = Mage::helper('adyen');
+        $storeId = $order->getStoreId();
+
+        $captureOnShipment = $adyenHelper->getConfigData('capture_on_shipment', 'adyen_abstract', $storeId);
+        $createPendingInvoice = $adyenHelper->getConfigData('create_pending_invoice', 'adyen_abstract', $storeId);
+
+        // validate if payment method is adyen and if capture_on_shipment is enabled
+        if($this->isPaymentMethodAdyen($order) && $captureOnShipment) {
+            if($createPendingInvoice) {
+                $transaction = Mage::getModel('core/resource_transaction');
+                $transaction->addObject($order);
+
+                foreach ($order->getInvoiceCollection() as $invoice) {
+                    /* @var Ho_Invoice_Model_Sales_Order_Invoice $invoice */
+                    if (! $invoice->canCapture()) {
+                        continue;
+                    }
+
+                    $invoice->capture();
+                    $invoice->setCreatedAt(now());
+                    $transaction->addObject($invoice);
+                }
+
+                $order->setIsInProcess(true);
+                $transaction->save();
+            } else {
+                // create an invoice and do a capture to adyen
+                if ($order->canInvoice()) {
+                    try {
+                        $invoice = $order->prepareInvoice();
+                        $invoice->getOrder()->setIsInProcess(true);
+
+                        // set transaction id so you can do a online refund from credit memo
+                        $invoice->setTransactionId(1);
+                        $invoice->register()->capture();
+                        $invoice->save();
+                    } catch (Exception $e) {
+                        Mage::logException($e);
+                    }
+
+                    $invoiceAutoMail = (bool) $adyenHelper->getConfigData('send_invoice_update_mail', 'adyen_abstract', $storeId);
+                    if ($invoiceAutoMail) {
+                        $invoice->sendEmail();
+                    }
+                }
+            }
+        }
+
+        return $this;
     }
 }

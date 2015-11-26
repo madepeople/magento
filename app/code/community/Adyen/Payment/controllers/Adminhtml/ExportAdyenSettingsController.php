@@ -106,4 +106,12 @@ class Adyen_Payment_Adminhtml_ExportAdyenSettingsController extends Mage_Adminht
         }
     }
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('system/config/payment');
+    }
+
 }

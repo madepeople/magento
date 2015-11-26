@@ -124,8 +124,26 @@ class Adyen_Payment_Block_Adminhtml_Adyen_Event_Queue_Grid extends Mage_Adminhtm
 
 
         return parent::_prepareColumns();
+    }
 
+    protected function _prepareMassaction()
+    {
+        $this->setMassactionIdField('event_queue_id');
+        $this->getMassactionBlock()->setFormFieldName('queue_id');
 
+        $this->getMassactionBlock()->addItem('delete', array(
+            'label'=> Mage::helper('adyen')->__('Delete'),
+            'url'  => $this->getUrl('*/*/massDelete', array('' => '')),        // public function massDeleteAction() in Adyen_Payment_Adminhtml_Adyen_Event_QueueController
+            'confirm' => Mage::helper('adyen')->__('Are you sure?')
+        ));
+
+        $this->getMassactionBlock()->addItem('excecute', array(
+            'label'=> Mage::helper('adyen')->__('Excecute'),
+            'url'  => $this->getUrl('*/*/massExecute', array('' => '')),        // public function massDeleteAction() in Adyen_Payment_Adminhtml_Adyen_Event_QueueController
+            'confirm' => Mage::helper('adyen')->__('Are you sure?')
+        ));
+
+        return $this;
     }
 
     public function getGridUrl()

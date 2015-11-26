@@ -313,11 +313,14 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
 
         // reactivate the quote again
         $quoteId = $order->getQuoteId();
-        $cart = Mage::getModel('sales/quote')->load($quoteId);
-        $cart->setIsActive(true)->save();
+        $quote = Mage::getModel('sales/quote')
+                    ->load($quoteId)
+                    ->setIsActive(1)
+                    ->save();
+
         // reset reserverOrderId because already used by previous order
-        $cart->setReservedOrderId(null);
-        $session->replaceQuote($cart);
+        $quote->setReservedOrderId(null);
+        $session->replaceQuote($quote);
 
         // if setting failed_attempt_disable is on and the payment method is openinvoice ignore this payment mehthod the second time
         if($this->_getConfigData('failed_attempt_disable', 'adyen_openinvoice') && $order->getPayment()->getMethod() == "adyen_openinvoice") {
@@ -346,7 +349,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
                     break;
             }
         } catch (Mage_Core_Exception $e) {
-            Mage::logException($e);
+            Adyen_Payment_Exception::logException($e);
         }
 
         $params = $this->getRequest()->getParams();
@@ -376,7 +379,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
         if($redirect == "checkout/cart") {
             $redirect = Mage::getUrl('checkout/cart');
             $this->_redirectUrl($redirect);
-        } else if ($redirect == "checkout/onepage") {
+        } elseif ($redirect == "checkout/onepage") {
             $redirect = Mage::helper('checkout/url')->getCheckoutUrl();
             $this->_redirectUrl($redirect);
         } else {
@@ -440,7 +443,7 @@ class Adyen_Payment_ProcessController extends Mage_Core_Controller_Front_Action 
             }
 
         } catch (Exception $e) {
-            Mage::logException($e);
+            Adyen_Payment_Exception::logException($e);
         }
         return $this;
     }

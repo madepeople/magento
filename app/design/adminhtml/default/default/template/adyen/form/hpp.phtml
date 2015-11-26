@@ -48,7 +48,7 @@
                                     <input type="radio" id="hpp_type_<?php echo $_typeCode ?>" name="payment[hpp_type]" value="<?php echo $_typeCode ?>" onclick="enableOptions('<?php echo $_typeCode ?>')"/>
                                 </td>
                                 <?php if (file_exists($filename)): ?>
-                                    <td width="80px"><label for="hpp_type_<?php echo $_typeCode ?>"><img src="<?php echo $this->getSkinUrl('images'.DS.'adyen'.DS."$_typeCode.png") ?>" alt="<?php echo $_typeName ?>" /></label></td>
+                                    <td width="80px"><label for="hpp_type_<?php echo $_typeCode ?>"><img src="<?php echo $this->getSkinUrl("images/adyen/$_typeCode.png") ?>" alt="<?php echo $_typeName ?>" /></label></td>
                                 <?php endif ?>
 
                                 <td><label for="hpp_type_<?php echo $_typeCode ?>"><?php echo $this->__($_typeName) ?></label></td>
@@ -75,7 +75,7 @@
                                                         <input type="radio" id="hpp_ideal_type_<?php echo $_issueId ?>" name="payment[hpp_ideal_type]" value="<?php echo $_issueId .DS. $_IssueLabel ?>"/>
                                                     </td>
                                                     <?php if (file_exists($_filename)): ?>
-                                                        <td width="80px"><label for="hpp_ideal_type_<?php echo $_issueId ?>"><img src="<?php echo $this->getSkinUrl('images'.DS.'adyen'.DS."$_bankFile.png") ?>" alt="<?php echo $_IssueLabel ?>" label="<?php echo $_IssueLabel ?>" /></label></td>
+                                                        <td width="80px"><label for="hpp_ideal_type_<?php echo $_issueId ?>"><img src="<?php echo $this->getSkinUrl("images/adyen/$_bankFile.png") ?>" alt="<?php echo $_IssueLabel ?>" label="<?php echo $_IssueLabel ?>" /></label></td>
                                                     <?php else: ?>
                                                         <td width="80px" class="label_hpp_ideal_type"><label width="80px" for="ideal_type_label_<?php echo $_issueId ?>"><?php echo $_IssueLabel ?></label></td>
                                                     <?php endif; ?>

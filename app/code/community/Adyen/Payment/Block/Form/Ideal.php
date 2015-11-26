@@ -52,6 +52,6 @@ class Adyen_Payment_Block_Form_Ideal extends Adyen_Payment_Block_Form_Hpp {
 
     public function getIssuerImageUrl($issuer) {
         $_bankFile = strtoupper(str_replace(" ", '', $issuer['label']));
-        return $this->getSkinUrl('images'.DS.'adyen'.DS. $_bankFile . ".png");
+        return $this->getSkinUrl("images/adyen/$_bankFile.png");
     }
 }

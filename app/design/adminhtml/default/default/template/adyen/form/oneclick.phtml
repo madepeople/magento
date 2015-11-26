@@ -24,6 +24,7 @@
  * @property   Adyen B.V
  * @copyright  Copyright (c) 2014 Adyen BV (http://www.adyen.com)
  */
+/** @var $this Adyen_Payment_Block_Form_Oneclick */
 ?>
 <?php $_code=$this->getMethodCode() ?>
 <ul id="payment_form_<?php echo $_code ?>" style="display:none;">
@@ -60,7 +61,7 @@
                 </div>
             </div>
 
-        <?php if($this->isNotRecurring()): ?>
+         <?php if( $this->showCvc()):?>
             <div class="columns three c">
                 <label><?php echo $this->__('Card Verification Number') ?></label>
                 <?php if($this->hasVerification()): ?>

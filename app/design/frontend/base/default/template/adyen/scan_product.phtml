@@ -117,13 +117,15 @@
             e.preventDefault();
         });
 
-        $('SubmitScan').observe('click', function(e){
-            var value =  $('inpscan').value;;
-            ajaxCall(value);
-            $('inpscan').value = "";
-            $('inpscan').focus();
-            e.preventDefault();
-        });
+        <?php if($this->hasAutoSubmitScanner()): ?>
+            $('SubmitScan').observe('click', function(e){
+                var value =  $('inpscan').value;;
+                ajaxCall(value);
+                $('inpscan').value = "";
+                $('inpscan').focus();
+                e.preventDefault();
+            });
+        <?php endif; ?>
 
 
 

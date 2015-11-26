@@ -17,7 +17,14 @@
  * @copyright	Copyright (c) 2011 Adyen (http://www.adyen.com)
  * @license	http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
- 
+
+
+
+/**
+ * Because of the dynamic payment methods used we rewrite the Payment helper so we always get the right payment methods
+ * back.
+ * Class Adyen_Payment_Helper_Payment_Data
+ */
 class Adyen_Payment_Helper_Payment_Data extends Mage_Payment_Helper_Data {
 
     /**
@@ -36,12 +43,10 @@ class Adyen_Payment_Helper_Payment_Data extends Mage_Payment_Helper_Data {
             Mage::getSingleton('adyen/observer')->createPaymentMethodFromHpp($methodCode, array(), Mage::app()->getStore(), '0');
             $class = Mage::getStoreConfig($key);
         } elseif(! $class && strpos($code, 'adyen_oneclick') !== false) {
-            if(Mage::app()->getStore()->isAdmin()) {
-                $methodCode = substr($code, strlen('adyen_oneclick_'));
-                $store = Mage::getSingleton('adminhtml/session_quote')->getStore();
-                Mage::getSingleton('adyen/observer')->createPaymentMethodFromOneClick($methodCode, array(), $store);
-                $class = Mage::getStoreConfig($key, $store->getId());
-            }
+            $methodCode = substr($code, strlen('adyen_oneclick_'));
+            $store = Mage::getSingleton('adminhtml/session_quote')->getStore();
+            Mage::getSingleton('adyen/billing_agreement_observer')->createPaymentMethodFromOneClick($methodCode, array(), $store);
+            $class = Mage::getStoreConfig($key, $store->getId());
         }
 
         $methodInstance = Mage::getModel($class);
@@ -58,6 +63,7 @@ class Adyen_Payment_Helper_Payment_Data extends Mage_Payment_Helper_Data {
      * array structure:
      *  $index => Varien_Simplexml_Element
      *
+     * @todo maybe we can use this method instead of loading the payment methods on each pageload.
      * @param mixed $store
      * @param Mage_Sales_Model_Quote $quote
      * @return array
