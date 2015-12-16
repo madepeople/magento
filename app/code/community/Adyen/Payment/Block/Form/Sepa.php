@@ -136,4 +136,26 @@ class Adyen_Payment_Block_Form_Sepa extends Adyen_Payment_Block_Form_Abstract
     {
         return $this->_getPaymentData('iban');
     }
+
+    public function getMethodLabelAfterHtml()
+    {
+        if (Mage::getStoreConfig('payment/adyen_abstract/title_renderer')
+            == Adyen_Payment_Model_Source_Rendermode::MODE_TITLE) {
+            return '';
+        }
+
+        if (! $this->hasData('_method_label_html')) {
+            $labelBlock = Mage::app()->getLayout()->createBlock('core/template', null, array(
+                'template' => 'adyen/payment/payment_method_label.phtml',
+                'payment_method_icon' =>  $this->getSkinUrl('images/adyen/sepa.png'),
+                'payment_method_label' => Mage::helper('adyen')->getConfigData('title', $this->getMethod()->getCode()),
+                'payment_method_class' => $this->getMethod()->getCode()
+            ));
+            $labelBlock->setParentBlock($this);
+
+            $this->setData('_method_label_html', $labelBlock->toHtml());
+        }
+
+        return $this->getData('_method_label_html');
+    }
 }
