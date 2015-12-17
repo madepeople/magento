@@ -424,7 +424,9 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
                     // Check if payment is banktransfer or sepa if true then send out order confirmation email
                     $isBankTransfer = $this->_isBankTransfer($this->_paymentMethod);
                     if($isBankTransfer || $this->_paymentMethod == 'sepadirectdebit') {
-                        $order->sendNewOrderEmail(); // send order email
+                        if (!$order->getEmailSent()) {
+                            $order->sendNewOrderEmail(); // send order email
+                        }
                         $this->_debugData['_processNotification send email'] = 'Send orderconfirmation email to shopper';
                     }
                 }
@@ -714,7 +716,9 @@ class Adyen_Payment_Model_ProcessNotification extends Mage_Core_Model_Abstract {
         // for boleto confirmation mail is send on order creation
         if($payment_method != "adyen_boleto") {
             // send order confirmation mail after invoice creation so merchant can add invoicePDF to this mail
-            $order->sendNewOrderEmail(); // send order email
+            if (!$order->getEmailSent()) {
+                $order->sendNewOrderEmail(); // send order email
+            }
         }
 
         if(($payment_method == "c_cash" && $this->_getConfigData('create_shipment', 'adyen_cash', $order->getStoreId())) || ($this->_getConfigData('create_shipment', 'adyen_pos', $order->getStoreId()) && $_paymentCode == "adyen_pos"))
