@@ -71,10 +71,13 @@ abstract class Adyen_Payment_Block_Form_Abstract extends Mage_Payment_Block_Form
     {
         if (is_null($this->_paymentData)) {
             $payment = $this->_getQuote()->getPayment();
-            try {
-                $this->_paymentData = unserialize($payment->getPoNumber());
-            } catch (Exception $e) {
-                $this->_paymentData = array();
+
+            if($payment->getPoNumber()) {
+                try {
+                    $this->_paymentData = unserialize($payment->getPoNumber());
+                } catch (Exception $e) {
+                    $this->_paymentData = array();
+                }
             }
         }
 
@@ -88,6 +91,7 @@ abstract class Adyen_Payment_Block_Form_Abstract extends Mage_Payment_Block_Form
 
         return null;
     }
+
     /**
      * @return Mage_Sales_Model_Quote|null
      */
@@ -98,5 +102,11 @@ abstract class Adyen_Payment_Block_Form_Abstract extends Mage_Payment_Block_Form
         }
 
         return Mage::helper('checkout/cart')->getQuote();
+    }
+
+    public function getQuoteId()
+    {
+        $quote = $this->_getQuote();
+        return $quote->getId();
     }
 }

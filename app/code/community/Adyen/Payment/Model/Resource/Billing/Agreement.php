@@ -37,12 +37,24 @@ class Adyen_Payment_Model_Resource_Billing_Agreement
      */
     public function addOrderRelation($agreementId, $orderId)
     {
-        $this->_getWriteAdapter()->insertIgnore(
-            $this->getTable('sales/billing_agreement_order'), array(
-                'agreement_id'  => $agreementId,
-                'order_id'      => $orderId
-            )
-        );
+        /*
+         * needed for subscription module, only available in version >= 1.8
+         */
+        if(method_exists($this->_getWriteAdapter(), 'insertIgnore')) {
+            $this->_getWriteAdapter()->insertIgnore(
+                $this->getTable('sales/billing_agreement_order'), array(
+                    'agreement_id'  => $agreementId,
+                    'order_id'      => $orderId
+                )
+            );
+        } else {
+            // use the default insert for <= 1.7 version
+            try {
+                parent::addOrderRelation($agreementId, $orderId);
+            } catch(Exception $e) {
+                // do not log this because this is a Integrity constraint violation solved in 1.8 by insertIgnore
+            }
+        }
         return $this;
     }
 }

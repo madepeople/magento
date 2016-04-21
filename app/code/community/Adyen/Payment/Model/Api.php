@@ -30,10 +30,10 @@ class Adyen_Payment_Model_Api extends Mage_Core_Model_Abstract
     const RECURRING_TYPE_RECURRING = 'RECURRING';
     const RECURRING_TYPE_ONECLICK_RECURRING = 'ONECLICK,RECURRING';
 
-    protected $_recurringTypes = [
+    protected $_recurringTypes = array(
         self::RECURRING_TYPE_ONECLICK,
         self::RECURRING_TYPE_RECURRING
-    ];
+    );
 
     protected $_paymentMethodMap;
 
@@ -66,7 +66,7 @@ class Adyen_Payment_Model_Api extends Mage_Core_Model_Abstract
     public function listRecurringContracts($shopperReference, $store = null)
     {
 
-        $recurringContracts = [];
+        $recurringContracts = array();
         foreach ($this->_recurringTypes as $recurringType) {
             try {
                 // merge ONECLICK and RECURRING into one record with recurringType ONECLICK,RECURRING
@@ -116,8 +116,8 @@ class Adyen_Payment_Model_Api extends Mage_Core_Model_Abstract
         // The $result contains a JSON array containing the available payment methods for the merchant account.
         parse_str($result, $resultArr);
 
-        $recurringContracts = [];
-        $recurringContractExtra = [];
+        $recurringContracts = array();
+        $recurringContractExtra = array();
         foreach($resultArr as $key => $value) {
             // strip the key
             $key = str_replace("recurringDetailsResult_details_", "", $key);
@@ -161,9 +161,9 @@ class Adyen_Payment_Model_Api extends Mage_Core_Model_Abstract
     {
         if (is_null($this->_paymentMethodMap)) {
             //@todo abstract this away to some config?
-            $this->_paymentMethodMap = [
+            $this->_paymentMethodMap = array(
                 'sepadirectdebit' => 'adyen_sepa'
-            ];
+            );
 
 
             $ccTypes = Mage::helper('adyen')->getCcTypes();

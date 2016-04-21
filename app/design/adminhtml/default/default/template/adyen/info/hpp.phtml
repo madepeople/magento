@@ -44,11 +44,21 @@
         <?php $bankData = $_info->getPoNumber(); ?>
         <?php if (!empty($bankData)) : ?>
             <?php
+            // for older versions < 2.5.2
             $id = explode(DS, $bankData);
-            $label = $id['1'];
+            $label = isset($id['1']) ? $id['1'] : "";
+
+            // older versions > 2.5.2
+            if($label == "") {
+                $label = $_info->getAdditionalInformation('hpp_type_bank_label');
+            }
+
             ?>
             <?php echo $this->__('Bank: %s', $this->htmlEscape($label)) ?><br/>
         <?php endif; ?>            
+    <?php endif; ?>
+    <?php if($this->htmlEscape($this->getInfo()->getAdyenTotalFraudScore()) != ""): ?>
+        <?php echo Mage::helper('adyen')->__('Total fraud score: %s', $this->htmlEscape($this->getInfo()->getAdyenTotalFraudScore())) ?><br/>
     <?php endif; ?>
     <?php if($_info->getAdyenKlarnaNumber() != null && $_info->getAdyenKlarnaNumber() != ""): ?>
         <?php echo Mage::helper('adyen')->__('Klarna reservation number: %s', $this->htmlEscape($_info->getAdyenKlarnaNumber())) ?> <br/>

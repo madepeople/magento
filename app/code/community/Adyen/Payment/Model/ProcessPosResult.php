@@ -37,6 +37,7 @@ class Adyen_Payment_Model_ProcessPosResult extends Mage_Core_Model_Abstract {
     public function processPosResponse($response)
     {
         $storeId = null;
+        $returnResult = false;
 
         $this->_debugData['processPosResponse begin'] = 'Begin to process POS result url';
 
@@ -81,6 +82,7 @@ class Adyen_Payment_Model_ProcessPosResult extends Mage_Core_Model_Abstract {
 
                         try {
                             $order->save();
+                            $returnResult = true;
                             $this->_debugData['complete'] = 'Order is updated with AdyenEventCode: ' . $order->getAdyenEventCode();
                         } catch (Exception $e) {
                             $this->_debugData['error'] = 'error updating order reason: ' . $e->getMessage();
@@ -119,18 +121,7 @@ class Adyen_Payment_Model_ProcessPosResult extends Mage_Core_Model_Abstract {
 
         $this->_debug($storeId);
 
-        // close the window
-        $html = "<html><body>
-		    				<script type=\"text/javascript\">
-								function closeWindow() {
-									window.open('', '_self', '');
-									window.close();
-                                }
-								setTimeout(closeWindow, 500);
-		    				</script>
-		    		</body></html>";
-
-        return $html;
+        return $returnResult;
     }
 
     protected function _validateChecksum($params)

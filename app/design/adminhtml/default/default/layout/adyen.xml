@@ -35,6 +35,7 @@
                 <arguments module="ordergrid" translate="header">
                     <header>Adyen Status</header>
                     <index>adyen_event_code</index>
+                    <filter_index>main_table.adyen_event_code</filter_index>
                     <width>50px</width>
                     <type>options</type>
                     <filter>adyen/adminhtml_sales_order_filter_adyen</filter>

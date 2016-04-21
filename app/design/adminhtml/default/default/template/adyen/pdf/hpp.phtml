@@ -37,8 +37,15 @@
         <?php $bankData = $_info->getPoNumber(); ?>
         <?php if (!empty($bankData)) : ?>
             <?php
+            // for older orders made in versions < 2.5.2
             $id = explode(DS, $bankData);
-            $label = $id['1'];
+            $label = isset($id['1']) ? $id['1'] : "";
+
+            // older versions > 2.5.2
+            if($label == "") {
+                $label = $_info->getAdditionalInformation('hpp_type_bank_label');
+            }
+
             ?>
             <?php echo $this->__('(Bank: %s)',$label) ?>
         <?php endif; ?>            

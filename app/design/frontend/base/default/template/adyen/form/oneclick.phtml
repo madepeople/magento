@@ -121,18 +121,25 @@ $_recurringDetails = $this->getRecurringDetails();
 
                         var cse_key_oneclick = <?php echo json_encode($this->getCsePublicKey()); ?>;
                         var cse_options_oneclick = {
-                            name:  'payment[encrypted_data_oneclick]',
-                            force: true
+                            name:  'payment[encrypted_data_oneclick]'
                         };
-
 
                         var cseUpdateOneClick = function() {
 
                             try {
                                 if (payment.currentMethod && payment.currentMethod == '<?php echo $_code ?>') {
-                                    var cse_form_oneclick = $('payment_form_<?php echo $_code ?>');
-                                    cse_options_oneclick.dataEncryptedName = "data-encrypted-name-oneclick-<?php echo $_code ?>";
-                                    adyen.encrypt.createEncryptedForm(cse_form_oneclick, cse_key_oneclick, cse_options_oneclick);
+                                    // get closest form element
+                                    var elementOneClick = $('payment_form_<?php echo $_code ?>');
+                                    var cse_form_oneclick =  elementOneClick.match('form') ? elementOneClick : elementOneClick.up('form');
+                                    // add this field to option
+                                    cse_options_oneclick.fieldNameAttribute = "data-encrypted-name-oneclick-<?php echo $_code ?>";
+
+                                    // do not validate because number does not exists for oneclick
+                                    cse_options_oneclick.enableValidations = false;
+
+                                    var cseFormOneClick = adyen.encrypt.createEncryptedForm(cse_form_oneclick, cse_key_oneclick, cse_options_oneclick);
+                                    // encrypt data directly because submit button is not always on the page
+                                    cseFormOneClick.createEncryptedField(cseFormOneClick.encrypt());
                                 }
                             } catch (e) {
                                 if (typeof console == "object") {
@@ -148,8 +155,17 @@ $_recurringDetails = $this->getRecurringDetails();
                             if (typeof adyen === 'undefined') {
                                 var script = document.createElement("script");
                                 script.type = "text/javascript";
-                                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt.js'); ?>";
+                                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_16.js'); ?>";
                                 document.body.appendChild(script);
+                            }
+
+                            // if the browser does not support forach method implement it
+                            if (!Array.prototype.forEach) {
+                                Array.prototype.forEach = function(fn, scope) {
+                                    for(var i = 0, len = this.length; i < len; ++i) {
+                                        fn.call(scope, this[i], i, this);
+                                    }
+                                }
                             }
 
                             var fields = $$('#payment_form_<?php echo $_code ?> input, #payment_form_<?php echo $_code ?> textarea, #payment_form_<?php echo $_code ?> select');

@@ -60,11 +60,11 @@ $oAttribute->setData('sort_order', $attributeSortOrder);
 $oAttribute->save();
 
 
-$connection->addColumn($this->getTable('sales/billing_agreement'), 'agreement_data', [
+$connection->addColumn($this->getTable('sales/billing_agreement'), 'agreement_data', array(
     'type' => Varien_Db_Ddl_Table::TYPE_TEXT,
     'nullable' => true,
     'comment' => 'Agreement Data'
-]);
+));
 
 
 $installer->endSetup();

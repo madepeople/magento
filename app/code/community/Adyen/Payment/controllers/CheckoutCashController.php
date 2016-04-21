@@ -69,6 +69,7 @@ class Adyen_Payment_CheckoutCashController extends Mage_Core_Controller_Front_Ac
 
             $oderStatus = Mage::helper('adyen')->getOrderStatus();
             $order->setStatus($oderStatus);
+            $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
             $order->save();
 
             // redirect to success page

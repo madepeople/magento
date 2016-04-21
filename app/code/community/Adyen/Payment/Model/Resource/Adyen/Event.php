@@ -106,7 +106,8 @@ class Adyen_Payment_Model_Resource_Adyen_Event
                 ->from($this->getMainTable(), array('psp_reference'))
                 ->where('increment_id = ?', $incrementId)
                 ->where("adyen_event_result LIKE '%AUTHORISATION%'")
-                ->order('psp_reference asc')
+                ->where('success = 1')
+                ->order('created_at desc')
         ;
         $stmt = $db->query($sql);
         return $stmt->fetch();        

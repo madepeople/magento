@@ -116,7 +116,7 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         $order = $payment->getOrder();
         $pspReference = Mage::getModel('adyen/event')->getOriginalPspReference($order->getIncrementId());
 
-        // if amound is a full refund send a refund/cancelled request so if it is not captured yet it will cancel the order
+        // if amount is a full refund send a refund/cancelled request so if it is not captured yet it will cancel the order
         $grandTotal = $order->getGrandTotal();
 
         if($grandTotal == $amount) {
@@ -139,6 +139,17 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         $payment->setLastTransId($this->getTransactionId())->setIsTransactionPending(true);
 
         $order = $payment->getOrder();
+
+        /*
+         * ReserveOrderId for this quote so payment failed notification
+         * does not interfere with new successful orders
+         */
+        $incrementId = $order->getIncrementId();
+        $quoteId = $order->getQuoteId();
+        $quote = Mage::getModel('sales/quote')
+            ->load($quoteId)
+            ->setReservedOrderId($incrementId)
+            ->save();
 
         // by zero authentication payment is authorised when api responds is succesfull
         if($order->getGrandTotal() == 0) {
@@ -258,34 +269,48 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         $requestData = Mage::getModel('adyen/adyen_data_modificationRequest')
             ->create($payment, $amount, $merchantAccount, $pspReference);
 
-        switch ($request) {
-            case "authorise":
-                $requestData = Mage::getModel('adyen/adyen_data_paymentRequest')
-                    ->create($payment, $amount, $this->_paymentMethod, $merchantAccount,$recurringType, $recurringPaymentType, $enableMoto);
+        try {
+            switch ($request) {
+                case "authorise":
+                    $requestData = Mage::getModel('adyen/adyen_data_paymentRequest')
+                        ->create($payment, $amount, $this->_paymentMethod, $merchantAccount, $recurringType, $recurringPaymentType, $enableMoto);
 
-                $response = $this->_service->authorise(array('paymentRequest' => $requestData));
-                break;
-            case "authorise3d":
-                $requestData = Mage::getModel('adyen/adyen_data_paymentRequest3d')
-                    ->create($payment, $merchantAccount);
+                    $response = $this->_service->authorise(array('paymentRequest' => $requestData));
+                    break;
+                case "authorise3d":
+                    $requestData = Mage::getModel('adyen/adyen_data_paymentRequest3d')
+                        ->create($payment, $merchantAccount);
 
-                $response = $this->_service->authorise3d(array('paymentRequest3d' => $requestData));
-                break;
-            case "capture":
-                $response = $this->_service->capture(array(
-                    'modificationRequest' => $requestData,
-                    'modificationResult' => $modificationResult));
-                break;
-            case "refund":
-                $response = $this->_service->refund(array(
-                    'modificationRequest' => $requestData,
-                    'modificationResult' => $modificationResult));
-                break;
-            case "cancel_or_refund":
-                $response = $this->_service->cancelorrefund(array(
-                    'modificationRequest' => $requestData,
-                    'modificationResult' => $modificationResult));
-                break;
+                    $response = $this->_service->authorise3d(array('paymentRequest3d' => $requestData));
+                    break;
+                case "capture":
+                    $response = $this->_service->capture(array(
+                        'modificationRequest' => $requestData,
+                        'modificationResult' => $modificationResult));
+                    break;
+                case "refund":
+                    $response = $this->_service->refund(array(
+                        'modificationRequest' => $requestData,
+                        'modificationResult' => $modificationResult));
+                    break;
+                case "cancel_or_refund":
+                    $response = $this->_service->cancelorrefund(array(
+                        'modificationRequest' => $requestData,
+                        'modificationResult' => $modificationResult));
+                    break;
+            }
+        } catch (SoapFault $e) {
+
+            // log the request
+            $this->_debugAdyen();
+            Mage::log($this->_pci()->obscureSensitiveData($requestData), self::DEBUG_LEVEL, "$request.log", true);
+
+
+            if (isset($response)) {
+                Mage::getResourceModel('adyen/adyen_debug')->assignData($response);
+                $this->_debugAdyen();
+            }
+            throw $e;
         }
 
 
@@ -361,12 +386,26 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
         }
         switch ($responseCode) {
             case "RedirectShopper":
-                $payment->setAdditionalInformation('paRequest', $response->paymentResult->paRequest);
-                $payment->setAdditionalInformation('md', $response->paymentResult->md);
-                $payment->setAdditionalInformation('issuerUrl', $response->paymentResult->issuerUrl);
+
+
+                $paRequest = $response->paymentResult->paRequest;
+                $md = $response->paymentResult->md;
+                $issuerUrl = $response->paymentResult->issuerUrl;
+
+                if(!empty($paRequest) && !empty($md) && !empty($issuerUrl)) {
+                    $payment->setAdditionalInformation('paRequest', $response->paymentResult->paRequest);
+                    $payment->setAdditionalInformation('md', $response->paymentResult->md);
+                    $payment->setAdditionalInformation('issuerUrl', $response->paymentResult->issuerUrl);
+                } else {
+                    // log exception
+                    $errorMsg = Mage::helper('adyen')->__('3D secure is not valid');
+                    Adyen_Payment_Exception::throwException($errorMsg);
+                }
+
                 Mage::getSingleton('customer/session')->setRedirectUrl("adyen/process/validate3d");
                 $this->_addStatusHistory($payment, $responseCode, $pspReference, $this->_getConfigData('order_status'));
                 break;
+            case "Cancelled":
             case "Refused":
 
                 if($response->paymentResult->refusalReason) {
@@ -386,13 +425,14 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                             $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED because the saved card is removed. Please try an other payment method.');
                             break;
                         default:
-                            $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED by Adyen.');
+                            $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED.');
                             break;
                     }
                 } else {
-                    $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED by Adyen.');
+                    $errorMsg = Mage::helper('adyen')->__('The payment is REFUSED.');
                 }
 
+                $this->resetReservedOrderId();
                 Adyen_Payment_Exception::throwException($errorMsg);
                 break;
             case "Authorised":
@@ -414,11 +454,14 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
                 $this->_addStatusHistory($payment, $responseCode, $pspReference);
                 break;
             case "Error":
+                $this->resetReservedOrderId();
                 $errorMsg = Mage::helper('adyen')->__('System error, please try again later');
                 Adyen_Payment_Exception::throwException($errorMsg);
                 break;
             default:
-                $this->writeLog("Unknown data type by Adyen");
+                $this->resetReservedOrderId();
+                $errorMsg = Mage::helper('adyen')->__('Unknown data type by Adyen');
+                Adyen_Payment_Exception::throwException($errorMsg);
                 break;
         }
 
@@ -433,6 +476,15 @@ abstract class Adyen_Payment_Model_Adyen_Abstract extends Mage_Payment_Model_Met
             ->saveData()
         ;
         return $this;
+    }
+
+    /**
+     * @desc Reset the reservedOrderId so Adyen notification will not interfere with
+     * the next payment
+     */
+    protected function resetReservedOrderId()
+    {
+        Mage::getSingleton('checkout/session')->getQuote()->setReservedOrderId(null);
     }
 
     /**

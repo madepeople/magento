@@ -96,7 +96,9 @@ class Adyen_Payment_Model_Billing_Agreement
     public function getCustomerReference()
     {
         if (! $this->hasData('customer_reference')) {
-            $customerReference = $this->getCustomer()->getData('adyen_customer_ref') ?: $this->getCustomerId();
+            $customerReference = $this->getCustomer()->getData('adyen_customer_ref')
+                ?: $this->getCustomer()->getData('increment_id')
+                ?:  $this->getCustomerId();
             $this->setData('customer_reference', $customerReference);
         }
 
@@ -111,7 +113,7 @@ class Adyen_Payment_Model_Billing_Agreement
     protected $_paymentMethodInstance = null;
 
     /**
-     * Retreive payment method instance
+     * Retrieve payment method instance
      *
      * @return Mage_Payment_Model_Method_Abstract
      */
@@ -119,9 +121,18 @@ class Adyen_Payment_Model_Billing_Agreement
     {
         if (is_null($this->_paymentMethodInstance)) {
             $methodCode = $this->getMethodCode();
-            $referenceId = $this->getReferenceId();
-            $methodInstanceName = $methodCode . "_" . $referenceId;
+            if ($this->getMethodCode() == 'adyen_oneclick') {
+                $referenceId = $this->getReferenceId();
+                $methodInstanceName = $methodCode . "_" . $referenceId;
+            }
+            else {
+                $methodInstanceName = $methodCode;
+            }
             $this->_paymentMethodInstance = Mage::helper('payment')->getMethodInstance($methodInstanceName);
+
+            if (! $this->_paymentMethodInstance) {
+                $this->_paymentMethodInstance = Mage::helper('payment')->getMethodInstance($this->getMethodCode());
+            }
         }
         if ($this->_paymentMethodInstance) {
             $this->_paymentMethodInstance->setStore($this->getStoreId());

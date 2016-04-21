@@ -27,5 +27,5 @@
 ?>
 <?php echo $this->htmlEscape($this->getMethod()->getTitle()) ?><br/>
 <?php if(!$this->inCheckout()):?>
-    <a target="_blank" href="<?php echo $this->getMethod()->getInfoInstance()->getAdditionalInformation('payment_url'); ?>">Click here to pay for your purchase</a>
+    <a target="_blank" href="<?php echo $this->getMethod()->getInfoInstance()->getAdditionalInformation('payment_url'); ?>"><?php echo $this->__("Click here to pay for your purchase"); ?></a>
 <?php endif; ?>

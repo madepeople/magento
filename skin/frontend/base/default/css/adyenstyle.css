@@ -43,6 +43,7 @@
 .adyen-payment-method-icon { margin-right: 6px; margin-left:2px; border:none !important; width:66px; height:43px; }
 
 .adyen-payment-method-icon.adyen_cc,
+.adyen-payment-method-icon.adyen_hpp,
 .adyen-payment-method-icon.adyen_boleto,
 .adyen-payment-method-icon.adyen_elv,
 .adyen-payment-method-icon.adyen_openinvoice_afterpay_default,
@@ -55,6 +56,7 @@
 
 
 .adyen-payment-method-icon.adyen_cc { background-position: 0 -272px; }
+.adyen-payment-method-icon.adyen_hpp { background-position: 0 -272px; }
 .adyen-payment-method-icon.adyen_boleto { background-position: 0 -2092px; }
 .adyen-payment-method-icon.adyen_elv {background-position: 0 -2000px; }
 .adyen-payment-method-icon.adyen_openinvoice_afterpay_default {background-position: 0 -1637px; }
@@ -103,6 +105,7 @@
 .sp-methods #oneclick_payment_form_adyen_oneclick { padding-top:10px; }
 .sp-methods #oneclick_payment_form_adyen_oneclick .recurring-creditcards .recurring_type { float:left; vertical-align: middle; height:120px;}
 
+#payment_form_adyen_ideal label img { float:none; }
 
 .saved-cards ul li { margin-bottom:10px; }
 .saved-cards .btn-delete  {margin-top:10px;}

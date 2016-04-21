@@ -105,10 +105,6 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
             ++$count;
         }
 
-        $comment = "<a target=\"_blank\" href=\"" . $url . "\">Generated payment url</a>";
-        $status = $this->_getConfigData('order_status');
-
-        $payment->getOrder()->addStatusHistoryComment($comment, $status);
         $payment->setAdditionalInformation('payment_url', $url);
 
         // send out email to shopper
@@ -257,24 +253,30 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
             $adyFields['billingAddressType'] .
             $adyFields['deliveryAddressType'] .
             $adyFields['shopperType'];
-        //Generate HMAC encrypted merchant signature
-        $signMac                  = Zend_Crypt_Hmac::compute($secretWord, 'sha1', $sign);
+
+
+        // Sort the array by key using SORT_STRING order
+        ksort($adyFields, SORT_STRING);
+
+        // Generate the signing data string
+        $signData = implode(":",array_map(array($this, 'escapeString'),array_merge(array_keys($adyFields), array_values($adyFields))));
+
+        //Generate SHA256 HMAC encrypted merchant signature
+        $signMac = Zend_Crypt_Hmac::compute(pack("H*" , $secretWord), 'sha256', $signData);
         $adyFields['merchantSig'] = base64_encode(pack('H*', $signMac));
-        // get extra fields
-        //$adyFields = Mage::getModel('adyen/adyen_openinvoice')->getOptionalFormFields($adyFields, $this->_order);
-        //IDEAL
-        if (strpos($this->getInfoInstance()->getCcType(), "ideal") !== false) {
-            $bankData = $this->getInfoInstance()->getPoNumber();
-            if (!empty($bankData)) {
-                $id                         = explode(DS, $bankData);
-                $adyFields['skipSelection'] = 'true';
-                $adyFields['brandCode']     = $this->getInfoInstance()->getCcType();
-                $adyFields['idealIssuerId'] = $id['0'];
-            }
-        }
 
         Mage::log($adyFields, self::DEBUG_LEVEL, 'adyen_http-request.log', true);
         return $adyFields;
+    }
+
+    /*
+     * @desc The character escape function is called from the array_map function in _signRequestParams
+     * $param $val
+     * return string
+     */
+    protected function escapeString($val)
+    {
+        return str_replace(':','\\:',str_replace('\\','\\\\',$val));
     }
 
     protected function _getSecretWord($storeId=null, $paymentMethodCode)

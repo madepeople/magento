@@ -27,7 +27,7 @@
  */
 class Adyen_Payment_Model_Adyen_Data_NotificationClassmap extends Varien_Object {
 
-    public $mount;
+    public $amount;
     public $notificationRequest;
     public $notificationRequestItem;
 

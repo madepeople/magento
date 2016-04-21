@@ -39,8 +39,7 @@
         <?php $bankData = $_info->getPoNumber(); ?>
         <?php if (!empty($bankData)) : ?>
             <?php
-            $id = explode(DS, $bankData);
-            $label = $id['1'];
+                $label = $_info->getAdditionalInformation('hpp_type_bank_label');
             ?>
             <?php echo $this->__('Bank: %s', $this->htmlEscape($label)) ?><br/>
         <?php endif; ?>            
