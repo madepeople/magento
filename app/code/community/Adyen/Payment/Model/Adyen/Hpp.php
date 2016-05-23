@@ -78,16 +78,27 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
         $hppType = str_replace('adyen_hpp_', '', $info->getData('method'));
         $hppType = str_replace('adyen_ideal', 'ideal', $hppType);
 
+        // set hpp type
+        $info->setCcType($hppType);
+
         $hppTypeLabel =  Mage::getStoreConfig('payment/'.$info->getData('method').'/title');
         $info->setAdditionalInformation('hpp_type_label', $hppTypeLabel);
 
-        $info->setCcType($hppType)
-             ->setPoNumber($data->getData('adyen_ideal_type'));
+        // set bankId and label
+        $selectedBankId = $data->getData('adyen_ideal_type');
+        if($selectedBankId) {
+            $issuers = $this->getInfoInstance()->getMethodInstance()->getIssuers();
+            if(!empty($issuers)) {
+                $info->setAdditionalInformation('hpp_type_bank_label', $issuers[$selectedBankId]['label']);
+            }
+            $info->setPoNumber($selectedBankId);
+        }
+
         /* @note misused field */
         $config = Mage::getStoreConfig("payment/adyen_hpp/disable_hpptypes");
         if (empty($hppType) && empty($config)) {
             Mage::throwException(
-                Mage::helper('adyen')->__('Payment Method is complusory in order to process your payment')
+                Mage::helper('adyen')->__('Payment Method is compulsory in order to process your payment')
             );
         }
         return $this;
@@ -206,6 +217,19 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
         $adyFields['shopperEmail']    = $shopperEmail;
         // recurring
         $recurringType                  = trim($this->_getConfigData('recurringtypes', 'adyen_abstract'));
+
+        // Paypal does not allow ONECLICK,RECURRING will be fixed on adyen platform but this is the quickfix for now
+        if($this->getInfoInstance()->getMethod() == "adyen_hpp_paypal" && $recurringType == 'ONECLICK,RECURRING') {
+            $recurringType = "RECURRING";
+        }
+
+        if ($customerId) {
+            $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+            $customerId = $customer->getData('adyen_customer_ref')
+                ?: $customer->getData('increment_id')
+                ?: $customerId;
+        }
+
         $adyFields['recurringContract'] = $recurringType;
         $adyFields['shopperReference']  = (!empty($customerId)) ? $customerId : self::GUEST_ID . $realOrderId;
         //blocked methods
@@ -224,50 +248,75 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
         ) {
             $adyFields['billingAddressType']  = "1";
             $adyFields['deliveryAddressType'] = "1";
-            $adyFields['shopperType']         = "";
+
+            // get shopperType setting
+            $shopperType = $this->_getConfigData("shoppertype", "adyen_openinvoice");
+            if($shopperType == '1') {
+                $adyFields['shopperType'] = "";
+            } else {
+                $adyFields['shopperType'] = "1";
+            }
+
         } else {
-            $adyFields['billingAddressType']  = "";
-            $adyFields['deliveryAddressType'] = "";
-            $adyFields['shopperType']         = "";
+            // for other payment methods like creditcard don't show avs address field in skin
+            $adyFields['billingAddressType'] = "2";
+
+            // Only set DeliveryAddressType to hidden and in request if there is a shipping address otherwise keep it empty
+            $deliveryAddress = $order->getShippingAddress();
+            if($deliveryAddress != null)
+            {
+                $adyFields['deliveryAddressType'] = "2";
+            } else {
+                $adyFields['deliveryAddressType'] = "";
+            }
+
+            $adyFields['shopperType'] = "";
         }
-        //the data that needs to be signed is a concatenated string of the form data
-        $sign = $adyFields['paymentAmount'] .
-            $adyFields['currencyCode'] .
-            $adyFields['shipBeforeDate'] .
-            $adyFields['merchantReference'] .
-            $adyFields['skinCode'] .
-            $adyFields['merchantAccount'] .
-            $adyFields['sessionValidity'] .
-            $adyFields['shopperEmail'] .
-            $adyFields['shopperReference'] .
-            $adyFields['recurringContract'] .
-            $adyFields['blockedMethods'] .
-            $adyFields['merchantReturnData'] .
-            $adyFields['billingAddressType'] .
-            $adyFields['deliveryAddressType'] .
-            $adyFields['shopperType'];
-        //Generate HMAC encrypted merchant signature
-        $secretWord               = $this->_getSecretWord();
-        $signMac                  = Zend_Crypt_Hmac::compute($secretWord, 'sha1', $sign);
-        $adyFields['merchantSig'] = base64_encode(pack('H*', $signMac));
+
         // get extra fields
         $adyFields = Mage::getModel('adyen/adyen_openinvoice')->getOptionalFormFields($adyFields, $this->_order);
-        //IDEAL
+
+        // For IDEAL add isuerId into request so bank selection is skipped
         if (strpos($this->getInfoInstance()->getCcType(), "ideal") !== false) {
-            $bankData = $this->getInfoInstance()->getPoNumber();
-            if (!empty($bankData)) {
-                $id                         = explode(DS, $bankData);
-                $adyFields['skipSelection'] = 'true';
-                $adyFields['brandCode']     = $this->getInfoInstance()->getCcType();
-                $adyFields['idealIssuerId'] = $id['0'];
-            }
+            $adyFields['issuerId'] = $this->getInfoInstance()->getPoNumber();
         }
+
         // if option to put Return Url in request from magento is enabled add this in the request
         $returnUrlInRequest = $this->_getConfigData('return_url_in_request', 'adyen_hpp');
         if ($returnUrlInRequest) {
             $url = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK, true) . "adyen/process/success";
             $adyFields['resURL'] = $url;
         }
+
+        $secretWord               = $this->_getSecretWord();
+
+        if ($this->_code == "adyen_openinvoice") {
+            $brandCode = $this->_getConfigData('openinvoicetypes', 'adyen_openinvoice');
+            $adyFields['brandCode'] = $brandCode;
+        } else {
+            $brandCode        = $this->getInfoInstance()->getCcType();
+            if($brandCode) {
+                $adyFields['brandCode'] = $brandCode;
+            }
+        }
+
+        // set offset to 0
+        $adyFields['offset'] = "0";
+
+        // eventHandler to overwrite the adyFields without changing module code
+        $adyFields = new Varien_Object($adyFields);
+        Mage::dispatchEvent('adyen_payment_hpp_fields', array('order' => $order, 'fields' => $adyFields));
+        $adyFields = $adyFields->getData();
+
+        // Sort the array by key using SORT_STRING order
+        ksort($adyFields, SORT_STRING);
+
+        // Generate the signing data string
+        $signData = implode(":",array_map(array($this, 'escapeString'),array_merge(array_keys($adyFields), array_values($adyFields))));
+
+        $signMac = Zend_Crypt_Hmac::compute(pack("H*" , $secretWord), 'sha256', $signData);
+        $adyFields['merchantSig'] = base64_encode(pack('H*', $signMac));
+
         // pos over hpp
 //         disable this because no one using this and it will always show POS payment method
 //         $terminalcode = 'redirect';
@@ -277,9 +326,20 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
 //         $signPOS = Zend_Crypt_Hmac::compute($secretWord, 'sha1', $strsign);
 //         $adyFields['pos.sig'] = base64_encode(pack('H*', $signPOS));
         Mage::log($adyFields, self::DEBUG_LEVEL, 'adyen_http-request.log', true);
+
+//        print_r($adyFields);die();
         return $adyFields;
     }
 
+    /*
+     * @desc The character escape function is called from the array_map function in _signRequestParams
+     * $param $val
+     * return string
+     */
+    protected function escapeString($val)
+    {
+        return str_replace(':','\\:',str_replace('\\','\\\\',$val));
+    }
 
     protected function _getSecretWord($options = null)
     {
@@ -298,7 +358,6 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
     /**
      * @desc Get url of Adyen payment
      * @return string
-     * @todo add brandCode here
      */
     public function getFormUrl()
     {
@@ -312,7 +371,7 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
                 } else {
                     $url = ($this->getHppOptionsDisabled())
                         ? 'https://test.adyen.com/hpp/select.shtml'
-                        : "https://test.adyen.com/hpp/details.shtml?brandCode=$brandCode";
+                        : "https://test.adyen.com/hpp/details.shtml";
                 }
                 break;
             default:
@@ -321,19 +380,11 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
                 } else {
                     $url = ($this->getHppOptionsDisabled())
                         ? 'https://live.adyen.com/hpp/select.shtml'
-                        : "https://live.adyen.com/hpp/details.shtml?brandCode=$brandCode";
+                        : "https://live.adyen.com/hpp/details.shtml";
                 }
                 break;
         }
-        //IDEAL
-        $idealBankUrl = false;
-        $bankData     = $this->getInfoInstance()->getPoNumber();
-        if ($brandCode == 'ideal' && !empty($bankData)) {
-            $idealBankUrl = ($isConfigDemoMode == true)
-                ? 'https://test.adyen.com/hpp/redirectIdeal.shtml'
-                : 'https://live.adyen.com/hpp/redirectIdeal.shtml';
-        }
-        return (!empty($idealBankUrl)) ? $idealBankUrl : $url;
+        return $url;
     }
 
 
@@ -356,7 +407,7 @@ class Adyen_Payment_Model_Adyen_Hpp extends Adyen_Payment_Model_Adyen_Abstract
 
     public function initialize($paymentAction, $stateObject)
     {
-        $state = Mage_Sales_Model_Order::STATE_NEW;
+        $state = Mage_Sales_Model_Order::STATE_PENDING_PAYMENT;
         $stateObject->setState($state);
         $stateObject->setStatus($this->_getConfigData('order_status'));
     }

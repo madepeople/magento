@@ -41,13 +41,9 @@ class Adyen_Payment_Model_Cronjob {
      */
     public function updateNotificationQueue()
     {
-        if($this->_getConfigData('update_notification_cronjob')) {
-
-            // call ProcessNotifications
-            $this->_debugData = Mage::getModel('adyen/processNotification')->updateNotProcessedNotifications();
-
-            $this->_debug(null);
-        }
+        // call ProcessNotifications
+        $this->_debugData = Mage::getModel('adyen/processNotification')->updateNotProcessedNotifications();
+        $this->_debug(null);
     }
 
     /**
@@ -59,7 +55,7 @@ class Adyen_Payment_Model_Cronjob {
     protected function _debug($storeId)
     {
         if ($this->_getConfigData('debug', 'adyen_abstract', $storeId)) {
-            $file = 'adyen_payment_cronjob.log';
+            $file = 'adyen_process_notification_cron.log';
             Mage::getModel('core/log_adapter', $file)->log($this->_debugData);
         }
     }

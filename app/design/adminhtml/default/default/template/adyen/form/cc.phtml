@@ -107,10 +107,10 @@
 </ul>
 <?php if ($this->isCseEnabled()): ?>
     <input type="hidden" id="<?php echo $_code ?>_encrypted_form_expiry_generationtime" value="<?php echo date("c"); ?>" data-encrypted-name="generationtime" />
-    <input type="hidden" id="adyen-cse-form" />
     <script type="text/javascript">
         //<![CDATA[
-        var cse_form = document.getElementById('adyen-cse-form').form;
+        var element = $('payment_form_<?php echo $_code ?>');
+        var cse_form =  element.match('form') ? element : element.up('form');
         var cse_key = <?php echo json_encode($this->getCsePublicKey()); ?>;
         var cse_options = {
             name:  'payment[encrypted_data]',
@@ -120,7 +120,9 @@
 
             if (order.paymentMethod && order.paymentMethod == '<?php echo $_code ?>') {
                 try {
-                    adyen.encrypt.createEncryptedForm(cse_form, cse_key, cse_options);
+                    var cseForm = adyen.encrypt.createEncryptedForm(cse_form, cse_key, cse_options);
+                    // encrypt data directly because submit button is not always on the page
+                    cseForm.createEncryptedField(cseForm.encrypt());
                 } catch (e) {
                     var encryptionFailed = true;
                 }
@@ -132,13 +134,15 @@
         }
         var cse_initialize = function() {
             $('payment_form_<?=$_code;?>').select('input', 'select', 'textarea').each(function(field) {
-                field.value = localStorage.getItem(field.id);
+                var quoteId = '<?=$this->getQuoteId()?>';
+                var quoteItemIds = quoteId + field.id;
+                field.value = localStorage.getItem(quoteItemIds);
             });
 
             if (typeof adyen === 'undefined') {
                 js = document.createElement("script");
                 js.type = "text/javascript";
-                js.src = "<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS); ?>adyen/payment/adyen.encrypt.js";
+                js.src = "<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS); ?>adyen/payment/adyen.encrypt_0_1_16.js";
                 document.body.appendChild(js);
             }
 
@@ -157,7 +161,10 @@
 
         $('payment_form_<?=$_code;?>').select('input', 'select', 'textarea').each(function(field) {
             field.observe('change', function() {
-                localStorage.setItem(field.id, field.value);
+                // get quoteid
+                var quoteId = '<?=$this->getQuoteId()?>';
+                var quoteItemIds = quoteId + field.id;
+                localStorage.setItem(quoteItemIds, field.value);
             });
         });
 

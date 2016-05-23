@@ -32,5 +32,12 @@
             <active>true</active>
             <codePool>community</codePool>
         </Adyen_Payment>
+        <Adyen_Fee>
+            <active>true</active>
+            <codePool>community</codePool>
+            <depends>
+                <Adyen_Payment/>
+            </depends>
+        </Adyen_Fee>
     </modules>
 </config>

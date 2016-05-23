@@ -293,17 +293,21 @@ $_code = $this->getMethodCode();
     <?php if ($this->isCseEnabled()): ?>
     <input type="hidden" id="<?php echo $_code ?>_encrypted_form_expiry_generationtime" value="<?php echo date("c"); ?>" data-encrypted-name="generationtime" />
     <script type="text/javascript">
-        var cse_form = $('payment_form_<?php echo $_code ?>');
+
+        // get closest form element
+        var element = $('payment_form_<?php echo $_code ?>');
+        var form =  element.match('form') ? element : element.up('form');
         var cse_key = <?php echo json_encode($this->getCsePublicKey()); ?>;
         var cse_options = {
-            name:  'payment[encrypted_data]',
-            force: true
+            name:  'payment[encrypted_data]'
         };
 
         var cseUpdate = function() {
             try {
                 if (payment.currentMethod && payment.currentMethod == '<?php echo $_code ?>') {
-                    adyen.encrypt.createEncryptedForm(cse_form, cse_key, cse_options);
+                    var cseForm = adyen.encrypt.createEncryptedForm(form, cse_key, cse_options);
+                    // encrypt data directly because submit button is not always on the page
+                    cseForm.createEncryptedField(cseForm.encrypt());
                 }
             } catch (e) {
                 if (typeof console == "object") {
@@ -319,13 +323,29 @@ $_code = $this->getMethodCode();
             if (typeof adyen === 'undefined') {
                 var script = document.createElement("script");
                 script.type = "text/javascript";
-                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt.js'); ?>";
+                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_16.js'); ?>";
                 document.body.appendChild(script);
+            }
+
+            // if the browser does not support forach method implement it
+            if (!Array.prototype.forEach) {
+                Array.prototype.forEach = function(fn, scope) {
+                    for(var i = 0, len = this.length; i < len; ++i) {
+                        fn.call(scope, this[i], i, this);
+                    }
+                }
             }
 
             var fields = $$('#payment_form_<?php echo $_code ?> input, #payment_form_<?php echo $_code ?> textarea, #payment_form_<?php echo $_code ?> select');
             fields.forEach(function(field) {
                 field.observe('change', cseUpdate);
+
+                // the creditcard field needs to be updated on keyup as well
+                // old browsers don't allow keyup and change event and because the cardBrand logo is shown
+                // on keyup we need to update the CSE as well on keyup for creditcard number
+                if(field.id == "<?php echo $_code ?>_cc_number") {
+                    field.observe('keyup', cseUpdate);
+                }
             });
         };
 

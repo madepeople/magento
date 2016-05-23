@@ -131,17 +131,16 @@ class Adyen_Payment_Model_ValidateResultUrl extends Mage_Core_Model_Abstract {
                     ->setOrder($order);
         $history->save();
 
-        // Update the Adyen Event Code if notification is not yet received
-        if(!(substr($order->getAdyenEventCode(), 0, 13) == Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISATION && $authResult == Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISED)){
-            $order->setAdyenEventCode($authResult);
-            $this->_debugData['Step3'] = 'Updating the adyen event code with ' . $authResult;
-        } else {
-            $this->_debugData['Step3'] = 'Not updating the adyen event code with ' . $authResult . 'because notification is already received';
-        }
-
         switch ($authResult) {
 
             case Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISED:
+                // do nothing wait for the notification
+                $this->_debugData['Step4'] = 'Add AUTHORISED to adyen event code, further wait for the notification';
+
+                $order->setAdyenEventCode($authResult);
+                $order->save();
+
+                break;
             case Adyen_Payment_Model_Event::ADYEN_EVENT_PENDING:
                 // do nothing wait for the notification
                 $this->_debugData['Step4'] = 'Do nothing wait for the notification';
@@ -165,9 +164,6 @@ class Adyen_Payment_Model_ValidateResultUrl extends Mage_Core_Model_Abstract {
                 $result = false;
                 break;
         }
-
-        $order->save();
-
         return $result;
     }
 

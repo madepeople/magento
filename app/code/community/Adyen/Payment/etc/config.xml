@@ -29,7 +29,7 @@
 <config>
     <modules>
         <Adyen_Payment>
-            <version>2.4.2</version>
+            <version>2.6.0</version>
         </Adyen_Payment>
     </modules>
     <global>
@@ -99,16 +99,8 @@
             <adyen>
                 <class>Adyen_Payment_Block</class>
             </adyen>
-            <adminhtml>
-                <rewrite>
-                    <sales_order_totals>Adyen_Payment_Block_Adminhtml_Sales_Order_Totals</sales_order_totals>
-                    <sales_order_invoice_totals>Adyen_Payment_Block_Adminhtml_Sales_Order_Invoice_Totals</sales_order_invoice_totals>
-                    <sales_order_creditmemo_totals>Adyen_Payment_Block_Adminhtml_Sales_Order_Creditmemo_Totals</sales_order_creditmemo_totals>
-                </rewrite>
-            </adminhtml>
             <sales>
                 <rewrite>
-                    <order_totals>Adyen_Payment_Block_Sales_Order_Totals</order_totals>
                     <adminhtml_billing_agreement_grid>Adyen_Payment_Block_Adminhtml_Sales_Billing_Agreement_Grid</adminhtml_billing_agreement_grid>
                 </rewrite>
             </sales>
@@ -118,67 +110,6 @@
                 <adyen>Adyen</adyen>
             </groups>
         </payment>
-        <fieldsets>
-            <sales_convert_quote_address>
-                <payment_fee_amount><to_order>*</to_order></payment_fee_amount>
-                <base_payment_fee_amount><to_order>*</to_order></base_payment_fee_amount>
-                <payment_installment_fee_amount><to_order>*</to_order></payment_installment_fee_amount>
-                <base_payment_installment_fee_amount><to_order>*</to_order></base_payment_installment_fee_amount>
-            </sales_convert_quote_address>
-            <sales_convert_order>
-                <payment_fee_amount><to_invoice>*</to_invoice></payment_fee_amount>
-                <base_payment_fee_amount><to_invoice>*</to_invoice></base_payment_fee_amount>
-                <payment_installment_fee_amount><to_invoice>*</to_invoice></payment_installment_fee_amount>
-                <base_payment_installment_fee_amount><to_invoice>*</to_invoice></base_payment_installment_fee_amount>
-                <payment_fee_amount><to_cm>*</to_cm></payment_fee_amount>
-                <base_payment_fee_amount><to_cm>*</to_cm></base_payment_fee_amount>
-                <payment_installment_fee_amount><to_invoice>*</to_invoice></payment_installment_fee_amount>
-                <base_payment_installment_fee_amount><to_invoice>*</to_invoice></base_payment_installment_fee_amount>
-                <payment_installment_fee_amount><to_cm>*</to_cm></payment_installment_fee_amount>
-                <base_payment_installment_fee_amount><to_cm>*</to_cm></base_payment_installment_fee_amount>
-            </sales_convert_order>
-        </fieldsets>
-        <sales>
-            <quote>
-                <totals>
-                    <payment_fee>
-                        <class>adyen/sales_quote_address_total_paymentFee</class>
-                        <after>subtotal,discount</after>
-                        <before>grand_total,tax</before>
-                    </payment_fee>
-                    <payment_installment_fee>
-                        <class>adyen/sales_quote_address_total_paymentInstallmentFee</class>
-                        <after>grand_total</after>
-                    </payment_installment_fee>
-                </totals>
-            </quote>
-            <order_invoice>
-                <totals>
-                    <payment_fee>
-                        <class>adyen/total_paymentFee_invoice</class>
-                        <after>subtotal,discount</after>
-                        <before>grand_total,tax</before>
-                    </payment_fee>
-                    <payment_installment_fee>
-                        <class>adyen/total_paymentInstallmentFee_invoice</class>
-                        <after>grand_total</after>
-                    </payment_installment_fee>
-                </totals>
-            </order_invoice>
-            <order_creditmemo>
-                <totals>
-                    <payment_fee>
-                        <class>adyen/total_paymentFee_creditmemo</class>
-                        <after>subtotal,discount</after>
-                        <before>grand_total,tax</before>
-                    </payment_fee>
-                    <payment_installment_fee>
-                        <class>adyen/total_paymentInstallmentFee_creditmemo</class>
-                        <after>grand_total</after>
-                    </payment_installment_fee>
-                </totals>
-            </order_creditmemo>
-        </sales>
         <events>
             <controller_action_predispatch>
                 <observers>
@@ -288,6 +219,8 @@
                 <ws_password_live></ws_password_live>
                 <demoMode>Y</demoMode>
                 <debug>1</debug>
+                <uncancelorder>1</uncancelorder>
+                <autorefundoncancel>1</autorefundoncancel>
                 <order_status>pending</order_status>
                 <payment_authorized>processing</payment_authorized>
                 <payment_authorized_virtual>complete</payment_authorized_virtual>
@@ -324,6 +257,7 @@
                 <group>adyen</group>
                 <title>Adyen iDEAL</title>
                 <show_ideal_logos>0</show_ideal_logos>
+                <autoselect_stored_ideal_bank>1</autoselect_stored_ideal_bank>
                 <sort_order>35</sort_order>
                 <allowspecific>1</allowspecific>
                 <specificcountry>NL</specificcountry>
@@ -338,7 +272,6 @@
                 <enable_scanner>0</enable_scanner>
                 <submit_scanner>0</submit_scanner>
                 <express_checkout>0</express_checkout>
-                <express_checkout_redirect_connect>1</express_checkout_redirect_connect>
                 <express_checkout_kiosk_mode>0</express_checkout_kiosk_mode>
                 <express_checkout_recurring>1</express_checkout_recurring>
                 <create_shipment>0</create_shipment>
@@ -369,6 +302,7 @@
                 <gender_show>0</gender_show>
                 <dob_show>0</dob_show>
                 <telephone_show>0</telephone_show>
+                <shoppertype>1</shoppertype>
                 <different_address_disable>0</different_address_disable>
                 <sort_order>40</sort_order>
             </adyen_openinvoice>
@@ -577,23 +511,17 @@
                 </recurringtypes>
             </payment>
         </adyen>
-        <sales>
-            <totals_sort>
-                <payment_fee>15</payment_fee>
-                <payment_installment_fee>16</payment_installment_fee>
-            </totals_sort>
-        </sales>
     </default>
     <crontab>
         <jobs>
-            <adyen>
+            <adyen_payment_process_notification_queue>
                 <schedule>
-                    <cron_expr>*/5 * * * *</cron_expr>
+                    <cron_expr>*/1 * * * *</cron_expr>
                 </schedule>
                 <run>
                     <model>adyen/cronjob::updateNotificationQueue</model>
                 </run>
-            </adyen>
+            </adyen_payment_process_notification_queue>
         </jobs>
     </crontab>
 </config>

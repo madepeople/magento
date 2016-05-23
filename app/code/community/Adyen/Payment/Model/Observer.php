@@ -44,6 +44,9 @@ class Adyen_Payment_Model_Observer {
             $store = Mage::app()->getStore();
         }
 
+        // by default disable adyen_ideal only if IDeal is in directoryLookup result show this payment method
+        $store->setConfig('payment/adyen_ideal/active', 0);
+
         if (Mage::getStoreConfigFlag('payment/adyen_hpp/active', $store)) {
             try {
                 $this->_addHppMethodsToConfig($store);
@@ -71,8 +74,6 @@ class Adyen_Payment_Model_Observer {
             }
 
             $store->setConfig('payment/adyen_hpp/active', 0);
-        } else {
-            $store->setConfig('payment/adyen_ideal/active', 0);
         }
 
         Varien_Profiler::stop(__CLASS__.'::'.__FUNCTION__);
@@ -87,8 +88,9 @@ class Adyen_Payment_Model_Observer {
         $methodNewCode = 'adyen_hpp_'.$methodCode;
 
         if ($methodCode == 'ideal') {
-            unset($methodData['title']);
             $methodNewCode = 'adyen_ideal';
+            // enable adyen Ideal
+            $store->setConfig('payment/adyen_ideal/active', 1);
         } else {
             $methodData = $methodData + Mage::getStoreConfig('payment/adyen_hpp', $store);
             $methodData['model'] = 'adyen/adyen_hpp';
@@ -395,8 +397,24 @@ class Adyen_Payment_Model_Observer {
             Mage::throwException(Mage::helper('adyen')->__('You forgot to fill in HMAC key for Test or Live'));
         }
 
-        $signMac = Zend_Crypt_Hmac::compute($hmacKey, 'sha1', implode('', $hmacFields));
+        // Sort the array by key using SORT_STRING order
+        ksort($fields, SORT_STRING);
+
+        // Generate the signing data string
+        $signData = implode(":",array_map(array($this, 'escapeString'),array_merge(array_keys($fields), array_values($fields))));
+
+        $signMac = Zend_Crypt_Hmac::compute(pack("H*" , $hmacKey), 'sha256', $signData);
         $fields['merchantSig'] = base64_encode(pack('H*', $signMac));
+    }
+
+    /*
+     * @desc The character escape function is called from the array_map function in _signRequestParams
+     * $param $val
+     * return string
+     */
+    protected function escapeString($val)
+    {
+        return str_replace(':','\\:',str_replace('\\','\\\\',$val));
     }
 
 
@@ -441,12 +459,16 @@ class Adyen_Payment_Model_Observer {
      */
     public function salesOrderPaymentCancel(Varien_Event_Observer $observer)
     {
+        $adyenHelper = Mage::helper('adyen');
+
         $payment = $observer->getEvent()->getPayment();
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
 
-        if($this->isPaymentMethodAdyen($order)) {
+        $autoRefund = $adyenHelper->getConfigData('autorefundoncancel', 'adyen_abstract', $order->getStoreId());
+
+        if($this->isPaymentMethodAdyen($order) && $autoRefund) {
             $pspReference = Mage::getModel('adyen/event')->getOriginalPspReference($order->getIncrementId());
             $payment->getMethodInstance()->SendCancelOrRefund($payment, $pspReference);
         }

@@ -84,7 +84,7 @@ class Adyen_Payment_Model_GetPosOrderStatus extends Mage_Core_Model_Abstract {
         {
             $this->_debugData['getOrderStatus count: '.$count . ' pending'] = 'order has the status: '.$order->getStatus() . ' lets wait a second';
 
-            sleep(1);
+            sleep(2);
             ++$count;
 
             if($count > 5) {
@@ -100,7 +100,7 @@ class Adyen_Payment_Model_GetPosOrderStatus extends Mage_Core_Model_Abstract {
 
             $this->_debugData['getOrderStatus count: '.$count . ' pending'] = 'order has the status: '.$order->getStatus() . ' lets wait a second';
 
-            sleep(1);
+            sleep(2);
             ++$count;
 
             if($count > 5) {

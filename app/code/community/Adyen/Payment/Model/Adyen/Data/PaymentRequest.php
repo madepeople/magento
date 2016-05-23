@@ -79,7 +79,15 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
         $orderCurrencyCode = $order->getOrderCurrencyCode();
         // override amount because this amount uses the right currency
         $amount = $order->getGrandTotal();
+
         $customerId = $order->getCustomerId();
+        if ($customerId) {
+            $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+            $customerId = $customer->getData('adyen_customer_ref')
+                ?: $customer->getData('increment_id')
+                ?: $customerId;
+        }
+
         $realOrderId = $order->getRealOrderId();
 
         $this->reference = $incrementId;
@@ -112,6 +120,10 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 } elseif($payment->getAdditionalInformation("store_cc") == "1") {
                     $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
                     $this->recurring->contract = $recurringType;
+                } elseif($recurringType == "RECURRING") {
+                    // recurring permission is not needed from shopper so just save it as recurring
+                    $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
+                    $this->recurring->contract = "RECURRING";
                 }
             } else {
                 $this->recurring = new Adyen_Payment_Model_Adyen_Data_Recurring();
@@ -123,8 +135,13 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
          * Browser info
          * @var unknown_type
          */
-        $this->browserInfo->acceptHeader = $_SERVER['HTTP_ACCEPT'];
-        $this->browserInfo->userAgent = $_SERVER['HTTP_USER_AGENT'];
+        if(isset($_SERVER['HTTP_ACCEPT'])) {
+            $this->browserInfo->acceptHeader = $_SERVER['HTTP_ACCEPT'];
+        }
+
+        if(isset($_SERVER['HTTP_USER_AGENT'])) {
+            $this->browserInfo->userAgent = $_SERVER['HTTP_USER_AGENT'];
+        }
 
         switch ($paymentMethod) {
             case "elv":
@@ -163,12 +180,12 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 if($deliveryAddress)
                 {
                     $this->deliveryAddress = new Adyen_Payment_Model_Adyen_Data_DeliveryAddress();
-                    $this->deliveryAddress->street = $helper->getStreet($billingAddress)->getName();
-                    $this->deliveryAddress->houseNumberOrName = $helper->getStreet($billingAddress)->getHouseNumber();
-                    $this->deliveryAddress->city = $billingAddress->getCity();
-                    $this->deliveryAddress->postalCode = $billingAddress->getPostcode();
-                    $this->deliveryAddress->stateOrProvince = $billingAddress->getRegionCode();
-                    $this->deliveryAddress->country = $billingAddress->getCountryId();
+                    $this->deliveryAddress->street = $helper->getStreet($deliveryAddress)->getName();
+                    $this->deliveryAddress->houseNumberOrName = $helper->getStreet($deliveryAddress)->getHouseNumber();
+                    $this->deliveryAddress->city = $deliveryAddress->getCity();
+                    $this->deliveryAddress->postalCode = $deliveryAddress->getPostcode();
+                    $this->deliveryAddress->stateOrProvince = $deliveryAddress->getRegionCode();
+                    $this->deliveryAddress->country = $deliveryAddress->getCountryId();
                 }
 
                 if($paymentMethod == "oneclick") {
@@ -216,8 +233,12 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                         $this->additionalData->entry = $kv;
                     } else {
                         if($paymentMethod == 'cc') {
+
+                            // log the browser data to see why it is failing
+                            Mage::log($_SERVER['HTTP_USER_AGENT'], Zend_Log::ERR, "adyen_exception.log", true);
+
                             // For CC encrypted data is needed if you use CSE
-                            Mage::throwException(
+                            Adyen_Payment_Exception::throwException(
                                 Mage::helper('adyen')->__('Missing the encrypted data value. Make sure the Client Side Encryption(CSE) script did encrypt the Credit Card details')
                             );
                         }
@@ -255,6 +276,9 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                     $this->installments = new Adyen_Payment_Model_Adyen_Data_Installments();
                     $this->installments->value = $payment->getAdditionalInformation('number_of_installments');
                 }
+
+                // add observer to have option to overrule and or add request data
+                Mage::dispatchEvent('adyen_payment_card_payment_request', array('order' => $order, 'paymentMethod' => $paymentMethod, 'paymentRequest' => $this));
 
                 break;
             case "boleto":
