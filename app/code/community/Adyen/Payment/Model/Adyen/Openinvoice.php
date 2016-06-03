@@ -199,7 +199,7 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
         $adyFields['shopper.lastName'] = trim($billingAddress->getLastname());
         $adyFields['billingAddress.street'] = $helper->getStreet($billingAddress,true)->getName();
 
-        if($helper->getStreet($billingAddress,true)->getHouseNumber() == "") {
+        if(trim($helper->getStreet($billingAddress,true)->getHouseNumber()) == "") {
             $adyFields['billingAddress.houseNumberOrName'] = "NA";
         } else {
             $adyFields['billingAddress.houseNumberOrName'] = $helper->getStreet($billingAddress,true)->getHouseNumber();
@@ -214,7 +214,7 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
         if($deliveryAddress != null)
         {
             $adyFields['deliveryAddress.street'] = $helper->getStreet($deliveryAddress,true)->getName();
-            if($helper->getStreet($deliveryAddress,true)->getHouseNumber() == "") {
+            if(trim($helper->getStreet($deliveryAddress,true)->getHouseNumber()) == "") {
                 $adyFields['deliveryAddress.houseNumberOrName'] = "NA";
             } else {
                 $adyFields['deliveryAddress.houseNumberOrName'] = $helper->getStreet($deliveryAddress,true)->getHouseNumber();
