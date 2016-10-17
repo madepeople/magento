@@ -542,7 +542,7 @@ class Adyen_Payment_Helper_Payment extends Adyen_Payment_Helper_Data
         $helper = Mage::helper('adyen');
 
         $billingAddressRequest['street'] = trim($helper->getStreet($billingAddress,true)->getName());
-        if($helper->getStreet($billingAddress,true)->getHouseNumber() == "") {
+        if(trim($helper->getStreet($billingAddress,true)->getHouseNumber()) == "") {
             $billingAddressRequest['houseNumberOrName'] = "NA";
         } else {
             $billingAddressRequest['houseNumberOrName'] = trim($helper->getStreet($billingAddress,true)->getHouseNumber());
