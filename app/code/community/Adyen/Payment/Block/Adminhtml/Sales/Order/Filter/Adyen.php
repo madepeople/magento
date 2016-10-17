@@ -57,6 +57,8 @@ class Adyen_Payment_Block_Adminhtml_Sales_Order_Filter_Adyen extends Mage_Adminh
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_REFUND:
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_CANCEL_OR_REFUND:
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISATION:
+                case Adyen_Payment_Model_Event::ADYEN_EVENT_NOF:
+                case Adyen_Payment_Model_Event::ADYEN_EVENT_NOC:                
 
                     if ($event['adyen_event_result'] == Adyen_Payment_Model_Event::ADYEN_EVENT_REFUND) {
                         $eventNamePartialTrue = "(PARTIAL) " . $event['adyen_event_result'] . " : " . "TRUE";

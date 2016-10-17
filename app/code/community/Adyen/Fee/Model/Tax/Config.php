@@ -84,7 +84,7 @@ class Adyen_Fee_Model_Tax_Config extends Mage_Tax_Model_Config
     public function paymentFeePriceIncludesTax($store = null)
     {
         if ($this->_paymentFeePriceIncludeTax === null) {
-            $this->_paymentFeePriceIncludeTax = (bool) $this->_getStoreConfig(
+            $this->_paymentFeePriceIncludeTax = (bool) $this->_getConfigDataCall(
                 self::CONFIG_XML_PATH_PAYMENT_FEE_INCLUDES_TAX,
                 $store
             );

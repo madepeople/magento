@@ -98,6 +98,7 @@ $_recurringDetails = $this->getRecurringDetails();
                 <?php endif;?>
 
                 <?php if ($this->isCseEnabled()): ?>
+                    <input type="hidden" id="payment_encrypted_data_<?php echo $_code;?>" name="payment[encrypted_data_<?php echo $_code;?>]" value=""/>
                     <input type="hidden" id="<?php echo $_code ?>_encrypted_form_expiry_generationtime" value="<?php echo date("c"); ?>" data-encrypted-name-oneclick-<?php echo $_code ?>="generationtime" />
                     <script type="text/javascript">
 
@@ -121,7 +122,7 @@ $_recurringDetails = $this->getRecurringDetails();
 
                         var cse_key_oneclick = <?php echo json_encode($this->getCsePublicKey()); ?>;
                         var cse_options_oneclick = {
-                            name:  'payment[encrypted_data_oneclick]'
+                            name:  'payment_encrypted_data_<?php echo $_code;?>'
                         };
 
                         var cseUpdateOneClick = function() {

@@ -193,7 +193,8 @@
                                     <frontend_model>adyen/adminhtml_system_config_testWebserverConfiguration</frontend_model>
                                     <sort_order>120</sort_order>
                                     <show_in_default>1</show_in_default>
-                                    <show_in_website>0</show_in_website>
+                                    <show_in_website>1</show_in_website>
+                                    <show_in_store>0</show_in_store>
                                 </ws_live_button>
                                 <capture_mode translate="label">
                                     <label>Capture Delay</label>
@@ -383,7 +384,7 @@
                                     <show_in_store>0</show_in_store>
                                 </uncancelorder>
                                 <autorefundoncancel translate="label">
-                                    <label>Automatic refund when a order is canceled</label>
+                                    <label>Automatic cancel\refund when a order is canceled</label>
                                     <tooltip>Enable/Disable automatic refund when canceling a order.</tooltip>
                                     <frontend_type>select</frontend_type>
                                     <config_path>payment/adyen_abstract/autorefundoncancel</config_path>
@@ -394,7 +395,7 @@
                                     <show_in_store>0</show_in_store>
                                 </autorefundoncancel>
                                 <send_invoice_update_mail translate="label">
-                                    <label>Invoice email (deprecated)</label>
+                                    <label>Invoice email</label>
                                     <frontend_type>select</frontend_type>
                                     <tooltip>Enable/Disable update mails to customers.</tooltip>
                                     <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -426,16 +427,6 @@
                             <sort_order>40</sort_order>
                             <frontend_model>adyen/adminhtml_system_config_fieldset_expanded</frontend_model>
                             <fields>
-                                <notification_hmac>
-                                    <label>Notification HMAC Key</label>
-                                    <tooltip>This is not required and should be left empty by default. You can use this as extra security, or if you do not want to use HTTP authentication. If the latter is the case, leave notification user name and password in 'Required Settings' empty and only use this key. Key can be generated at Adyen Customer Area => Server Communication => Standard Notification => Additional Settings => Generate new HMAC key</tooltip>
-                                    <frontend_type>text</frontend_type>
-                                    <config_path>payment/adyen_abstract/notification_hmac</config_path>
-                                    <sort_order>77</sort_order>
-                                    <show_in_default>1</show_in_default>
-                                    <show_in_website>1</show_in_website>
-                                    <show_in_store>0</show_in_store>
-                                </notification_hmac>
                                 <ignore_refund_notification>
                                     <label>Ignore refund notification</label>
                                     <tooltip>If the refund is done on the Adyen Platform it will send a refund notification to Magento which automatically creates a credit memo. If you set this setting to 'Yes', this will not happen because it will not process any of the REFUND notification that is received.</tooltip>
@@ -593,6 +584,35 @@
                                 </fraud_manual_review_accept_status>
                             </fields>
                         </adyen_manual_review>
+                        <adyen_split_payments type="group" translate="label comment tooltip">
+                            <label>Advanced: Split Payments</label>
+                            <frontend_type>text</frontend_type>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>305</sort_order>
+                            <frontend_model>adyen/adminhtml_system_config_fieldset_expanded</frontend_model>
+                            <comment>
+                                <![CDATA[
+                                    <p>
+                                    It is possible to do split payments with GiftCards please configure here what refund strategie you want to use
+                                    </p>
+                                ]]>
+                            </comment>
+                            <fields>
+                                <split_payments_refund_strategy>
+                                    <label>Refund Strategy</label>
+                                    <tooltip>Only relevant if you accept giftcards on Adyen platform</tooltip>
+                                    <frontend_type>select</frontend_type>
+                                    <source_model>adyen/source_SplitPaymentsRefundStrategies</source_model>
+                                    <config_path>payment/adyen_abstract/split_payments_refund_strategy</config_path>
+                                    <sort_order>20</sort_order>
+                                    <show_in_default>1</show_in_default>
+                                    <show_in_website>1</show_in_website>
+                                    <show_in_store>0</show_in_store>
+                                </split_payments_refund_strategy>
+                            </fields>
+                        </adyen_split_payments>
                     </fields>
                 </adyen_abstract>
                 <!-- @CC only -->
@@ -832,6 +852,17 @@
                                     <show_in_website>1</show_in_website>
                                     <show_in_store>1</show_in_store>
                                 </installments_hipercard>
+                                <disable_zero_total>
+                                    <label>Disable at zero grand total</label>
+                                    <tooltip>Disable this payment method in the checkout when the grand total of the quote is 0.</tooltip>
+                                    <frontend_type>select</frontend_type>
+                                    <source_model>adminhtml/system_config_source_yesno</source_model>
+                                    <config_path>payment/adyen_cc/disable_zero_total</config_path>
+                                    <sort_order>220</sort_order>
+                                    <show_in_default>1</show_in_default>
+                                    <show_in_website>1</show_in_website>
+                                    <show_in_store>1</show_in_store>
+                                </disable_zero_total>
                             </fields>
                         </adyen_cc_advanced>
                     </fields>
@@ -931,7 +962,7 @@
                         </skinCode>
                         <secret_wordt translate="label">
                             <label>HMAC Key for Test</label>
-                            <tooltip>Copy and paste the HMAC key of the skin you want to use from Test Customer Area => Skins. => click on [skin code] => Edit => HMAC for Test platform. Currently, only the older SHA-1 HMAC calculation method is supported in this plugin.</tooltip>
+                            <tooltip>Copy and paste the HMAC key of the skin you want to use from Test Customer Area => Skins. => click on [skin code] => Edit => HMAC for Test platform. Only the SHA-256 HMAC calculation method is supported in this plugin. SHA-1 is deprecate and will not be supported by Adyen.</tooltip>
                             <frontend_type>text</frontend_type>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
@@ -940,7 +971,7 @@
                         </secret_wordt>
                         <secret_wordp translate="label">
                             <label>HMAC Key for Live</label>
-                            <tooltip>Copy and paste the HMAC key of the skin you want to use from Test Customer Area => Skins. => click on [skin code] => Edit => HMAC for Live platform. Currently, only the older SHA-1 HMAC calculation method is supported in this plugin.</tooltip>
+                            <tooltip>Copy and paste the HMAC key of the skin you want to use from Test Customer Area => Skins. => click on [skin code] => Edit => HMAC for Live platform. Only the SHA-256 HMAC calculation method is supported in this plugin. SHA-1 is deprecate and will not be supported by Adyen.</tooltip>
                             <frontend_type>text</frontend_type>
                             <sort_order>50</sort_order>
                             <show_in_default>1</show_in_default>
@@ -1010,6 +1041,17 @@
                                     <show_in_website>1</show_in_website>
                                     <show_in_store>1</show_in_store>
                                 </return_url_in_request>
+                                <disable_zero_total>
+                                    <label>Disable at zero grand total</label>
+                                    <tooltip>Disable this payment method in the checkout when the grand total of the quote is 0.</tooltip>
+                                    <frontend_type>select</frontend_type>
+                                    <source_model>adminhtml/system_config_source_yesno</source_model>
+                                    <config_path>payment/adyen_hpp/disable_zero_total</config_path>
+                                    <sort_order>120</sort_order>
+                                    <show_in_default>1</show_in_default>
+                                    <show_in_website>1</show_in_website>
+                                    <show_in_store>1</show_in_store>
+                                </disable_zero_total>
                             </fields>
                         </adyen_hpp_advanced>
                     </fields>
@@ -1794,6 +1836,139 @@
                         </visible_type>
                     </fields>
                 </adyen_pay_by_mail>
+                <!-- @Apple Pay only -->
+                <adyen_apple_pay translate="label" module="adyen">
+                    <label>Apple Pay</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>370</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <frontend_model>adyen/adminhtml_system_config_fieldset_method</frontend_model>
+                    <activity_path>payment/adyen_apple_pay/active</activity_path>
+                    <comment><![CDATA[
+                               You need to configure Apple Pay on the Adyen Platform. Please contact support@adyen.com and provide us CSR + merchant Identifier.<br />
+                               Apple Pay will only be visable if you are running on IOS10 and higher. You need to browse on a Safari browser and you need to have active creditcards in your wallet.
+                            ]]></comment>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <tooltip>Set the sequence number of this payment method in the checkout. Payment methods with a higher sort order number will be displayed lower in the list.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>25</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </sort_order>
+                        <merchant_identifier_test>
+                            <label>Test: Apple Merchant Identifier</label>
+                            <tooltip>You can retrieve this from you Apple Account</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </merchant_identifier_test>
+                        <merchant_identifier_live>
+                            <label>Live: Apple Merchant Identifier</label>
+                            <tooltip>You can retrieve this from you Apple Account</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>35</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </merchant_identifier_live>
+                        <full_path_location_pem_file_test>
+                            <label>Test: PEM File location</label>
+                            <tooltip>You need to generate a pem file from the apple certificate. You need to upload this to your webserver and define the full path location here.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </full_path_location_pem_file_test>
+                        <full_path_location_pem_file_live>
+                            <label>Live: PEM File location</label>
+                            <tooltip>You need to generate a pem file from the apple certificate. You need to upload this to your webserver and define the full path location here.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>45</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </full_path_location_pem_file_live>
+                        <shipping_type>
+                            <label>Shipping Type</label>
+                            <tooltip>Title of the shipping method selection on the payments sheet you only these options this is limited by Apple</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adyen/source_applePayShippingType</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </shipping_type>
+                        <allow_quest_checkout>
+                            <label>Allow Guest Checkout</label>
+                            <tooltip>Show Apple Pay icon if user is not logged in. The user has the option to set his own contact detals and shipping\billing address</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </allow_quest_checkout>
+                        <change_address>
+                            <label>Option to change address details in Apple Payment Sheet</label>
+                            <frontend_type>select</frontend_type>
+                            <tooltip>Do you want to offer the customer that is logged in to change his address in the Apple Payment Sheet?</tooltip>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends><allow_quest_checkout>0</allow_quest_checkout></depends>
+                        </change_address>
+                        <show_in_payment_step_checkout>
+                            <label>Show payment method as well in the Payment Information step of the checkout</label>
+                            <tooltip>If you set this to NO this will not be shown as a payment method option in the checkout steps. It will be visable on the product and shopping basket page</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>80</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </show_in_payment_step_checkout>
+                        <show_outside_of_checkout>
+                            <label>Show Apple buy button on product and cart page</label>
+                            <tooltip>Set this to 'no' if you have advanced options for, for example, shipping that are not supported by the Apple Pay checkout forcing the user to first go through the Magento Checkout</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <show_in_payment_step_checkout>1</show_in_payment_step_checkout>
+                            </depends>
+                        </show_outside_of_checkout>
+                    </fields>
+                </adyen_apple_pay>
                 <!-- @Elv only -->
                 <adyen_elv translate="label" module="adyen">
                     <label>ELV (Deprecated, better use Adyen SEPA)</label>

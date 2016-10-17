@@ -72,4 +72,26 @@
     <?php if($this->htmlEscape($this->getInfo()->getAdyenAcquirerReference()) != ""): ?>
         <?php echo Mage::helper('adyen')->__('Acquirer reference: %s', $this->htmlEscape($this->getInfo()->getAdyenAcquirerReference())) ?><br/>
     <?php endif; ?>
+
+<!--    show split paymetn-->
+
+    <?php if($this->getSplitPayments()): ?>
+        <table>
+            <tr>
+                <th>PspReference</th>
+                <th>Payment Method</th>
+                <th>Amount</th>
+                <th>Refunded</th>
+            </tr>
+        <?php foreach ($this->getSplitPayments() as $payment): ?>
+            <tr>
+                <td><?php echo $payment->getPspreference() ?></td>
+                <td><?php echo $payment->getPaymentMethod() ?></td>
+                <td><?php echo $payment->getAmount() ?></td>
+                <td><?php echo $payment->getTotalRefunded() ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+
 <?php endif; ?>

@@ -40,23 +40,33 @@
                     <?php echo $this->__('Choose Your Bank') ?>
                 </label>
             </li>
-            <?php foreach ($this->getIssuers() as $_issuerId => $_issuerData): ?>
+            <?php
+
+            $size = count($this->getIssuers());
+            $count = 1;
+
+            foreach ($this->getIssuers() as $_issuerId => $_issuerData): ?>
                 <li>
                     <label class="adyen-ideal-image-label" for="adyen_ideal_type_<?php echo $_issuerId ?>">
                         <input type="radio" id="adyen_ideal_type_<?php echo $_issuerId ?>"
                             name="payment[adyen_ideal_type]" value="<?php echo $_issuerId ?>"
-                            <?php if (isset($_issuerData['selected'])): ?>checked<?php endif; ?> />
+                               class="<?php if ($size == $count) { echo 'validate-one-required-by-name';} ?>"
+                            <?php if (isset($_issuerData['selected'])): ?>checked<?php endif; ?>
+
+                        />
                         <img src="<?php echo $this->getIssuerImageUrl($_issuerData); ?>"
                              alt="<?php echo $_issuerData['label'] ?>" />
                     </label>
                 </li>
-            <?php endforeach; ?>
+            <?php
+                $count++;
+            endforeach; ?>
         <?php else:?>
             <li>
                 <label for="payment[adyen_ideal_type]">
                     <?php echo $this->__('Choose Your Bank') ?>
                 </label>
-                <select class="adyen_select_ideal" name="payment[adyen_ideal_type]">
+                <select class="adyen_select_ideal validate-select" name="payment[adyen_ideal_type]">
                     <option value=""><?php echo $this->__('Choose Your Bank');?></option>
                 <?php foreach ($this->getIssuers() as $_issuerId => $_issuerData): ?>
                     <option value="<?php echo $_issuerId ?>" <?php if (isset($_issuerData['selected'])): ?>selected<?php endif; ?>>

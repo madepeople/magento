@@ -37,4 +37,18 @@ class Adyen_Payment_Block_Info_Hpp extends Mage_Payment_Block_Info {
         return $this->toHtml();
     }
 
+
+    public function getSplitPayments()
+    {
+        // retrieve split payments of the order
+        $orderPaymentCollection = Mage::getModel('adyen/order_payment')->getCollection();
+        $orderPaymentCollection->addPaymentFilterAscending($this->getInfo()->getId());
+
+        if($orderPaymentCollection->getSize() > 0) {
+            return $orderPaymentCollection;
+        } else {
+            return null;
+        }
+    }
+
 }

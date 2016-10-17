@@ -46,7 +46,9 @@ class Adyen_Payment_Model_Event extends Mage_Core_Model_Abstract {
     const ADYEN_EVENT_RECURRING_CONTRACT = "RECURRING_CONTRACT";
     const ADYEN_EVENT_REPORT_AVAILABLE = "REPORT_AVAILABLE";
     const ADYEN_EVENT_ORDER_CLOSED = "ORDER_CLOSED";
-
+    const ADYEN_EVENT_NOF = "NOTIFICATION_OF_FRAUD";
+    const ADYEN_EVENT_NOC = "NOTIFICATION_OF_CHARGEBACK";
+    
     /**
      * Initialize resources
      */

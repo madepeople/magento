@@ -34,6 +34,12 @@ class Adyen_Payment_Block_Redirect extends Mage_Core_Block_Abstract {
      */
     protected $_debugData = array();
 
+    /**
+     * Zend_Log debug level
+     * @var unknown_type
+     */
+    const DEBUG_LEVEL = 7;
+
     protected function _getCheckout() {
         return Mage::getSingleton('checkout/session');
     }
@@ -189,6 +195,10 @@ class Adyen_Payment_Block_Redirect extends Mage_Core_Block_Abstract {
             }
         }
         $html.= '</body></html>';
+
+        // log the actual HTML
+        Mage::log($html, self::DEBUG_LEVEL, 'adyen_http-request-form.log');
+
         return $html;
     }
 

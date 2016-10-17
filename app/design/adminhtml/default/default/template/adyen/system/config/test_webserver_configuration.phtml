@@ -53,7 +53,13 @@
 
         var request = new Ajax.Request(baseUrl, {
             method: 'POST',
-            parameters: {username: username, password: password, modus: '<?php echo $this->getModus(); ?>'},
+            parameters: {
+                username: username,
+                password: password,
+                modus: '<?php echo $this->getModus(); ?>',
+                website: '<?php echo $this->getWebsite(); ?>',
+                store: '<?php echo $this->getStore(); ?>'
+            },
             timeout: 2000,
             onSuccess: function(response) { if (response.responseText) { alert("<?php echo Mage::helper('adminhtml')->__('successful'); ?>") } else { alert("<?php echo Mage::helper('adminhtml')->__('failed'); ?>") } }
         });

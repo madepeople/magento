@@ -344,12 +344,11 @@ class Adyen_Payment_Model_Observer {
 
 
     protected $_requiredHmacFields = array(
-        'merchantReference',
-        'paymentAmount',
         'currencyCode',
-        'shipBeforeDate',
-        'skinCode',
         'merchantAccount',
+        'paymentAmount',
+        'skinCode',
+        'merchantReference',
         'sessionValidity'
     );
 
@@ -544,6 +543,19 @@ class Adyen_Payment_Model_Observer {
                 }
             }
         }
+
+        return $this;
+    }
+    /**
+     * Set current invoice to payment when capturing.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function addCurrentInvoiceToPayment(Varien_Event_Observer $observer)
+    {
+        $invoice = $observer->getInvoice();
+        $payment = $observer->getPayment();
+        $payment->setCurrentInvoice($invoice);
 
         return $this;
     }

@@ -86,7 +86,9 @@ class Adyen_Payment_Block_Adminhtml_System_Config_TestWebserverConfiguration ext
             'button_label' => Mage::helper('adyen')->__($originalData['button_label']),
             'modus' => $originalData['modus'],
             'html_id' => $elementHtmlId,
-            'url_webserver_validation' => Mage::helper('adminhtml')->getUrl('adminhtml/ValidateWebserverSettings')
+            'url_webserver_validation' => Mage::helper('adminhtml')->getUrl('adminhtml/ValidateWebserverSettings'),
+            'website' => Mage::app()->getRequest()->getParam('website'),
+            'store' => Mage::app()->getRequest()->getParam('store')
         );
     }
 

@@ -29,8 +29,8 @@ class Adyen_Fee_Model_Total_PaymentPercentageFee_Creditmemo extends Mage_Sales_M
 {
     public function collect(Mage_Sales_Model_Order_Creditmemo $creditmemo)
     {
-        $creditmemo->setGrandTotal($creditmemo->getGrandTotal()+$creditmemo->getPaymentPercentageFeeAmount());
-        $creditmemo->setBaseGrandTotal($creditmemo->getBaseGrandTotal()+$creditmemo->getBasePaymentPercentageFeeAmount());
+        $creditmemo->setGrandTotal($creditmemo->getGrandTotal()+$creditmemo->getPaymentPercentageFee());
+        $creditmemo->setBaseGrandTotal($creditmemo->getBaseGrandTotal()+$creditmemo->getBasePaymentPercentageFee());
         return $this;
     }
 }

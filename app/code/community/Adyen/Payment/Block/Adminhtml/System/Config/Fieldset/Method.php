@@ -35,7 +35,7 @@ class Adyen_Payment_Block_Adminhtml_System_Config_Fieldset_Method
      * @param callback|null $configCallback
      * @return bool
      */
-    protected function _isPaymentEnabled($element, $configCallback = null)
+    protected function _isPaymentEnabled($element)
     {
         $groupConfig = $this->getGroup($element)->asArray();
         $activityPath = isset($groupConfig['activity_path']) ? $groupConfig['activity_path'] : '';
@@ -44,11 +44,12 @@ class Adyen_Payment_Block_Adminhtml_System_Config_Fieldset_Method
             return false;
         }
 
-        if ($configCallback && is_callable($configCallback)) {
-            $isPaymentEnabled = call_user_func($configCallback, $activityPath);
-        } else {
-            $isPaymentEnabled = (bool)(string)$this->_getConfigDataModel()->getConfigDataValue($activityPath);
+        // for ideal look at adyen HPP configuration
+        if($activityPath == "payment/adyen_ideal/active") {
+            $activityPath = "payment/adyen_hpp/active";
         }
+
+        $isPaymentEnabled = (bool)(string)$this->_getConfigDataModel()->getConfigDataValue($activityPath);
 
         return (bool)$isPaymentEnabled;
     }

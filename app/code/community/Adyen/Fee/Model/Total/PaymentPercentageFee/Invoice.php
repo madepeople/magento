@@ -29,8 +29,8 @@ class Adyen_Fee_Model_Total_PaymentPercentageFee_Invoice extends Mage_Sales_Mode
 {
     public function collect(Mage_Sales_Model_Order_Invoice $invoice)
     {
-        $invoice->setGrandTotal($invoice->getGrandTotal()+$invoice->getPaymentPercentageFeeAmount());
-        $invoice->setBaseGrandTotal($invoice->getBaseGrandTotal()+$invoice->getBasePaymentPercentageFeeAmount());
+        $invoice->setGrandTotal($invoice->getGrandTotal()+$invoice->getPaymentPercentageFee());
+        $invoice->setBaseGrandTotal($invoice->getBaseGrandTotal()+$invoice->getBasePaymentPercentageFee());
         return $this;
     }
 }

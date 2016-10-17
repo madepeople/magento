@@ -93,8 +93,8 @@ class Adyen_Fee_Model_Sales_Quote_Address_Total_PaymentInstallmentFee extends Ma
                                 $this->_setBaseAmount(0);
 
                                 $interestRate = $installment[3];
-                                $grandTotal = $address->getGrandTotal();
-                                $fee = ($grandTotal / 100) * $interestRate;
+                                $baseGrandTotal = $address->getGrandTotal();
+                                $fee = ($baseGrandTotal / 100) * $interestRate;
 
                                 $balance = $fee - $currentAmount;
 

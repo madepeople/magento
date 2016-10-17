@@ -52,15 +52,9 @@ class Adyen_Fee_Model_Sales_Quote_Address_Total_PaymentPercentageFee extends Mag
             return $this;
         }
 
-        // minus the payment method fee inclusief tax if both are set
-        $paymentMethodFee = $address->getPaymentFeeAmount();
-        $paymentMethodFeeTax = $address->getPaymentFeeTax();
-
-        $grandTotal = $address->getGrandTotal() - ($paymentMethodFee + $paymentMethodFeeTax);
-        $fee = ($address->getGrandTotal() / 100) * $percentageFee;
-
         $grandTotal = $address->getGrandTotal();
         $baseGrandTotal = $address->getBaseGrandTotal();
+        $fee = ($baseGrandTotal / 100) * $percentageFee;
 
         $address->setPaymentPercentageFee($address->getQuote()->getStore()->convertPrice($fee));
         $address->setBasePaymentPercentageFee($fee);

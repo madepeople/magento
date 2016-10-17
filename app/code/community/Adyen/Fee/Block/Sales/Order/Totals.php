@@ -50,19 +50,21 @@ class Adyen_Fee_Block_Sales_Order_Totals extends Mage_Sales_Block_Order_Totals {
             );
         }
 
-        $this->addTotal(
-            new Varien_Object(
-                array(
-                    'code'      => 'payment_percentage_fee',
-                    'strong'    => false,
-                    'value'     => $this->getSource()->getPaymentPercentageFee(),
-                    'base_value'=> $this->getSource()->getBasePaymentPercentageFee(),
-                    'label'     => $this->helper('adyen')->__('Payment Percentage Fee'),
-                    'area'      => '',
-                )
-            ),
-            'subtotal'
-        );
+        if (((float)$this->getSource()->getPaymentPercentageFee()) != 0) {
+            $this->addTotal(
+                new Varien_Object(
+                    array(
+                        'code'      => 'payment_percentage_fee',
+                        'strong'    => false,
+                        'value'     => $this->getSource()->getPaymentPercentageFee(),
+                        'base_value'=> $this->getSource()->getBasePaymentPercentageFee(),
+                        'label'     => $this->helper('adyen')->__('Payment Percentage Fee'),
+                        'area'      => '',
+                    )
+                ),
+                'subtotal'
+            );
+        }
 
         if (((float)$this->getSource()->getPaymentInstallmentFeeAmount()) != 0) {
             $this->addTotal(

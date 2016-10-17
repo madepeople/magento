@@ -37,7 +37,7 @@ class Adyen_Payment_Model_Adyen_Data_ModificationRequest extends Adyen_Payment_M
     public function create(Varien_Object $payment, $amount, $merchantAccount, $pspReference = null)
     {
         $order = $payment->getOrder();
-        $currency = $order->getBaseCurrencyCode();
+        $currency = $order->getOrderCurrencyCode();
         $incrementId = $order->getIncrementId();
 
         $this->anyType2anyTypeMap = null;

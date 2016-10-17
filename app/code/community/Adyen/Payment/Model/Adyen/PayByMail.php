@@ -34,6 +34,7 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
     protected $_canUseCheckout = true;
     protected $_canUseInternal = true;
     protected $_canUseForMultishipping = true;
+    protected $_isInitializeNeeded = true;
 
     protected $_paymentMethodType = 'hpp';
 
@@ -70,21 +71,18 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
 
     }
 
-    public function authorize(Varien_Object $payment, $amount) {
 
+    public function initialize($paymentAction, $stateObject)
+    {
+        $state = Mage_Sales_Model_Order::STATE_PENDING_PAYMENT;
+        $stateObject->setState($state);
+        $stateObject->setStatus($this->_getConfigData('order_status'));
+
+
+        $payment = $this->getInfoInstance();
         $payment->setLastTransId($this->getTransactionId())->setIsTransactionPending(true);
 
         // create payment link and add it to comment history and send to shopper
-
-        $order = $payment->getOrder();
-
-        /*
-         * Do not send a email notification when order is created.
-         * Only do this on the AUHTORISATION notification.
-         * This is needed for old versions where there is no check if email is already send
-         */
-//        $order->setCanSendNewEmailFlag(false);
-
         $fields = $this->getFormFields();
 
         $url = $this->getFormUrl();
@@ -106,31 +104,8 @@ class Adyen_Payment_Model_Adyen_PayByMail extends Adyen_Payment_Model_Adyen_Abst
         }
 
         $payment->setAdditionalInformation('payment_url', $url);
-
-        // send out email to shopper
-//        $templateId = "Fav Email";
-//
-//        $emailTemplate = Mage::getModel('core/email_template')->loadByCode($templateId);
-//
-//        $vars = array('user_name' => $userName, 'product_name' => $productName);
-//
-//        $emailTemplate->getProcessedTemplate($vars);
-//
-//        $emailTemplate->setSenderEmail(Mage::getStoreConfig('trans_email/ident_general/email', $storeId));
-//
-//        $emailTemplate->setSenderName(Mage::getStoreConfig('trans_email/ident_general/name', $storeId));
-//
-//
-//        $emailTemplate->send($receiveEmail,$receiveName, $vars);
-
-//        $order->
-
-//        $order->sendNewOrderEmail(); // send order email
-
-
-
-        return $this;
     }
+
 
     public function getFormFields()
     {

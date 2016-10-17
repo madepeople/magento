@@ -101,8 +101,8 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
         $this->shopperIP = $order->getRemoteIp();
         $this->shopperReference = (!empty($customerId)) ? $customerId : self::GUEST_ID . $realOrderId;
 
-        // Set the recurring contract
-        if($recurringType) {
+        // Set the recurring contract for apple pay do not save as oneclick or recurring because that will give errors on recurring payments
+        if($paymentMethod != "apple_pay" && $recurringType) {
             if($paymentMethod == "oneclick") {
                 // For ONECLICK look at the recurringPaymentType that the merchant has selected in Adyen ONECLICK settings
                 if($payment->getAdditionalInformation('customer_interaction')) {
@@ -155,6 +155,7 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                 $this->elv->bankLocationId = $elv['bank_location'];
                 $this->elv->bankName = $elv['bank_name'];
                 break;
+            case "apple_pay":
             case "cc":
             case "oneclick":
 
@@ -221,12 +222,22 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
                     $this->selectedRecurringDetailReference = $recurringDetailReference;
                 }
 
-				if (Mage::getModel('adyen/adyen_cc')->isCseEnabled()) {
+                if ($paymentMethod == "apple_pay") {
+                    $token = $payment->getAdditionalInformation("token");
+                    if (!$token) {
+                        Mage::throwException(Mage::helper('adyen')->__('Missing token'));
+                    }
+
+                    $kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
+                    $kv->key = new SoapVar("payment.token", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
+                    $kv->value = new SoapVar(base64_encode($token), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
+                    $this->additionalData->entry = $kv;
+                } else if (Mage::getModel('adyen/adyen_cc')->isCseEnabled()) {
 
                     $this->card = null;
 
                     // this is only needed for creditcards
-                    if($payment->getAdditionalInformation("encrypted_data") != "") {
+                    if($payment->getAdditionalInformation("encrypted_data") != "" && $payment->getAdditionalInformation("encrypted_data") != "false" ) {
                         $kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
                         $kv->key = new SoapVar("card.encrypted.json", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
                         $kv->value = new SoapVar($payment->getAdditionalInformation("encrypted_data"), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");

@@ -75,7 +75,8 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
         return parent::isApplicableToQuote($quote, $checksBitMask);
     }
 
-    public function assignData($data) {
+    public function assignData($data)
+    {
         if (!($data instanceof Varien_Object)) {
             $data = new Varien_Object($data);
         }
@@ -144,7 +145,8 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
      * @desc Get url of Adyen payment
      * @return string
      */
-    public function getFormUrl() {
+    public function getFormUrl()
+    {
         $paymentRoutine = $this->_getConfigData('payment_routines', 'adyen_hpp');
         $openinvoiceType = $this->_getConfigData('openinvoicetypes', 'adyen_openinvoice');
 
@@ -167,7 +169,8 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
         return $url;
     }
 
-    public function getFormName() {
+    public function getFormName()
+    {
         return "Adyen HPP";
     }
 
@@ -176,13 +179,15 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
      * @desc Notice these are used to prepopulate the fields, but client can edit them at Adyen.
      * @return type array
      */
-    public function getFormFields() {
+    public function getFormFields()
+    {
         $adyFields = parent::getFormFields();
-        $adyFields = $this->getOptionalFormFields($adyFields,$this->_order);
+        $adyFields = $this->getOptionalFormFields($adyFields,$this->_order, true);
         return $adyFields;
     }
 
-    public function getOptionalFormFields($adyFields,$order) {
+    public function getOptionalFormFields($adyFields,$order, $logging)
+    {
         if (empty($order)) return $adyFields;
 
         $helper = Mage::helper('adyen');
@@ -193,37 +198,75 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
 
         $middleName = trim($billingAddress->getMiddlename());
         if($middleName != "") {
-            $adyFields['shopper.infix'] = $middleName;
+            $adyFields['shopper.infix'] = trim($middleName);
         }
 
         $adyFields['shopper.lastName'] = trim($billingAddress->getLastname());
-        $adyFields['billingAddress.street'] = $helper->getStreet($billingAddress,true)->getName();
+        $adyFields['billingAddress.street'] = trim($helper->getStreet($billingAddress,true)->getName());
 
         if(trim($helper->getStreet($billingAddress,true)->getHouseNumber()) == "") {
             $adyFields['billingAddress.houseNumberOrName'] = "NA";
         } else {
-            $adyFields['billingAddress.houseNumberOrName'] = $helper->getStreet($billingAddress,true)->getHouseNumber();
+            $adyFields['billingAddress.houseNumberOrName'] = trim($helper->getStreet($billingAddress,true)->getHouseNumber());
         }
 
-        $adyFields['billingAddress.city'] = trim($billingAddress->getCity());
-        $adyFields['billingAddress.postalCode'] = trim($billingAddress->getPostcode());
-        $adyFields['billingAddress.stateOrProvince'] = trim($billingAddress->getRegionCode());
-        $adyFields['billingAddress.country'] = trim($billingAddress->getCountryId());
+        if (trim($billingAddress->getCity()) == "") {
+            $adyFields['billingAddress.city'] = "NA";
+        } else {
+            $adyFields['billingAddress.city'] = trim($billingAddress->getCity());
+        }
+
+        if (trim($billingAddress->getPostcode()) == "") {
+            $adyFields['billingAddress.postalCode'] = "NA";
+        } else {
+            $adyFields['billingAddress.postalCode'] = trim($billingAddress->getPostcode());
+        }
+
+        if (trim($billingAddress->getRegionCode()) == "") {
+            $adyFields['billingAddress.stateOrProvince'] = "NA";
+        } else {
+            $adyFields['billingAddress.stateOrProvince'] = trim($billingAddress->getRegionCode());
+        }
+
+        if (trim($billingAddress->getCountryId()) == "") {
+            $adyFields['billingAddress.country'] = "NA";
+        } else {
+            $adyFields['billingAddress.country'] = trim($billingAddress->getCountryId());
+        }
 
         $deliveryAddress = $order->getShippingAddress();
         if($deliveryAddress != null)
         {
-            $adyFields['deliveryAddress.street'] = $helper->getStreet($deliveryAddress,true)->getName();
-            if(trim($helper->getStreet($deliveryAddress,true)->getHouseNumber()) == "") {
+            $adyFields['deliveryAddress.street'] = trim($helper->getStreet($deliveryAddress,true)->getName());
+            if (trim($helper->getStreet($deliveryAddress,true)->getHouseNumber()) == "") {
                 $adyFields['deliveryAddress.houseNumberOrName'] = "NA";
             } else {
-                $adyFields['deliveryAddress.houseNumberOrName'] = $helper->getStreet($deliveryAddress,true)->getHouseNumber();
+                $adyFields['deliveryAddress.houseNumberOrName'] = trim($helper->getStreet($deliveryAddress,true)->getHouseNumber());
             }
 
-            $adyFields['deliveryAddress.city'] = trim($deliveryAddress->getCity());
-            $adyFields['deliveryAddress.postalCode'] = trim($deliveryAddress->getPostcode());
-            $adyFields['deliveryAddress.stateOrProvince'] = trim($deliveryAddress->getRegionCode());
-            $adyFields['deliveryAddress.country'] = trim($deliveryAddress->getCountryId());
+            if (trim($deliveryAddress->getCity()) == "") {
+                $adyFields['deliveryAddress.city'] = "NA";
+            } else {
+                $adyFields['deliveryAddress.city'] = trim($deliveryAddress->getCity());
+            }
+
+            if (trim($deliveryAddress->getPostcode()) == "") {
+                $adyFields['deliveryAddress.postalCode'] = "NA";
+            } else {
+                $adyFields['deliveryAddress.postalCode'] = trim($deliveryAddress->getPostcode());
+            }
+
+            if (trim($deliveryAddress->getRegionCode()) == "") {
+                $adyFields['deliveryAddress.stateOrProvince'] = "NA";
+            } else {
+                $adyFields['deliveryAddress.stateOrProvince'] = trim($deliveryAddress->getRegionCode());
+            }
+
+            if (trim($deliveryAddress->getCountryId()) == "") {
+                $adyFields['deliveryAddress.country'] = "NA";
+            } else {
+                $adyFields['deliveryAddress.country'] = trim($deliveryAddress->getCountryId());
+            }
         }
 
 
@@ -235,7 +278,6 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
                 $adyFields['shopper.gender'] = $this->getGenderText($customer->getGender());
             } else {
                 // fix for OneStepCheckout (guest is not logged in but uses email that exists with account)
-                $_customer = Mage::getModel('customer/customer');
                 if($order->getCustomerGender()) {
                     $customerGender = $order->getCustomerGender();
                 } else {
@@ -249,16 +291,16 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
             $dob = $customer->getDob();
 
             if (!empty($dob)) {
-                $adyFields['shopper.dateOfBirthDayOfMonth'] = $this->getDate($dob, 'd');
-                $adyFields['shopper.dateOfBirthMonth'] = $this->getDate($dob, 'm');
-                $adyFields['shopper.dateOfBirthYear'] = $this->getDate($dob, 'Y');
+                $adyFields['shopper.dateOfBirthDayOfMonth'] = trim($this->getDate($dob, 'd'));
+                $adyFields['shopper.dateOfBirthMonth'] = trim($this->getDate($dob, 'm'));
+                $adyFields['shopper.dateOfBirthYear'] = trim($this->getDate($dob, 'Y'));
             } else {
                 // fix for OneStepCheckout (guest is not logged in but uses email that exists with account)
                 $dob = $order->getCustomerDob();
                 if (!empty($dob)) {
-                    $adyFields['shopper.dateOfBirthDayOfMonth'] = $this->getDate($dob, 'd');
-                    $adyFields['shopper.dateOfBirthMonth'] = $this->getDate($dob, 'm');
-                    $adyFields['shopper.dateOfBirthYear'] = $this->getDate($dob, 'Y');
+                    $adyFields['shopper.dateOfBirthDayOfMonth'] = trim($this->getDate($dob, 'd'));
+                    $adyFields['shopper.dateOfBirthMonth'] = trim($this->getDate($dob, 'm'));
+                    $adyFields['shopper.dateOfBirthYear'] = trim($this->getDate($dob, 'Y'));
                 }
             }
         } else {
@@ -267,9 +309,9 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
             $adyFields['shopper.gender'] = $this->getGenderText($order->getCustomerGender());
             $dob = $order->getCustomerDob();
             if (!empty($dob)) {
-                $adyFields['shopper.dateOfBirthDayOfMonth'] = $this->getDate($dob, 'd');
-                $adyFields['shopper.dateOfBirthMonth'] = $this->getDate($dob, 'm');
-                $adyFields['shopper.dateOfBirthYear'] = $this->getDate($dob, 'Y');
+                $adyFields['shopper.dateOfBirthDayOfMonth'] = trim($this->getDate($dob, 'd'));
+                $adyFields['shopper.dateOfBirthMonth'] = trim($this->getDate($dob, 'm'));
+                $adyFields['shopper.dateOfBirthYear'] = trim($this->getDate($dob, 'Y'));
             }
         }
         // for sweden add here your socialSecurityNumber
@@ -300,7 +342,7 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
             ++$count;
             $linename = "line".$count;
             $additional_data_sign['openinvoicedata.' . $linename . '.currencyCode'] = $currency;
-            $additional_data_sign['openinvoicedata.' . $linename . '.description'] = $item->getName();
+            $additional_data_sign['openinvoicedata.' . $linename . '.description'] = str_replace("\n", '', trim($item->getName()));
             $additional_data_sign['openinvoicedata.' . $linename . '.itemAmount'] = $helper->formatAmount($item->getPrice(), $currency);
             $additional_data_sign['openinvoicedata.' . $linename . '.itemVatAmount'] = ($item->getTaxAmount() > 0 && $item->getPriceInclTax() > 0) ? $helper->formatAmount($item->getPriceInclTax(), $currency) - $helper->formatAmount($item->getPrice(), $currency):$helper->formatAmount($item->getTaxAmount(), $currency);
 
@@ -393,10 +435,12 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
         // signature is first alphabatical keys seperate by : and then | and then the values seperate by :
         foreach($additional_data_sign as $key => $value) {
             // add to fields
-            $adyFields[$key] = $value;
+            $adyFields[trim($key)] = trim($value);
         }
 
-        Mage::log($adyFields, self::DEBUG_LEVEL, 'adyen_http-request.log');
+        if($logging) {
+            Mage::log($adyFields, self::DEBUG_LEVEL, 'adyen_http-request.log');
+        }
 
         return $adyFields;
     }
@@ -432,15 +476,18 @@ class Adyen_Payment_Model_Adyen_Openinvoice extends Adyen_Payment_Model_Adyen_Hp
     }
 
 
-    public function genderShow() {
+    public function genderShow()
+    {
         return $this->_getConfigData('gender_show', 'adyen_openinvoice');
     }
 
-    public function dobShow() {
+    public function dobShow()
+    {
         return $this->_getConfigData('dob_show', 'adyen_openinvoice');
     }
 
-    public function telephoneShow() {
+    public function telephoneShow()
+    {
         return $this->_getConfigData('telephone_show', 'adyen_openinvoice');
     }
 }

@@ -45,7 +45,7 @@ class Adyen_Payment_Adminhtml_ValidateWebserverSettingsController extends Mage_A
                 $storeId = $store->getId();
             } elseif ($websiteCode) {
                 $website = Mage::getModel('core/website')->load($websiteCode);
-                $storeId = $website->getId();
+                $storeId = $website->getDefaultGroup()->getDefaultStoreId();
             } else {
                 // the default
                 $storeId = 0;

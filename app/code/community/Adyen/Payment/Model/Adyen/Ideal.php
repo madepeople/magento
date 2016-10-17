@@ -62,4 +62,18 @@ class Adyen_Payment_Model_Adyen_Ideal
         ksort($issuers);
         return $issuers;
     }
+
+    public function validate()
+    {
+        parent::validate();
+        $info    = $this->getInfoInstance();
+        $hppType = $info->getCcType();
+        // validate if the ideal bank is chosen
+        if ($hppType == "ideal") {
+            if ($info->getPoNumber() == "") {
+                // hpp type is empty throw error
+                Mage::throwException(Mage::helper('adyen')->__('You chose an invalid bank'));
+            }
+        }
+    }
 }

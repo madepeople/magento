@@ -50,7 +50,7 @@ $_code = $this->getMethodCode();
 
         <?php if($this->dobShow()):?>
         <li class="fields">
-            <?php $_dob = $this->getLayout()->createBlock('customer/widget_dob') ?>
+            <?php $_dob = $this->getLayout()->createBlock('customer/widget_dob')->setTemplate('adyen/widget/dob.phtml') ?>
 
             <?php echo $_dob->setDate($this->getDate())->setFieldIdFormat($_code.':%s')->setFieldNameFormat('payment[%s]')->toHtml() ?>
         </li>

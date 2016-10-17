@@ -82,7 +82,6 @@ class Adyen_Payment_Block_Form_Sepa extends Adyen_Payment_Block_Form_Abstract
         $countryList = Mage::getResourceModel('directory/country_collection')
             ->loadData()
             ->toOptionArray(false);
-        $sepaCountries = array();
         foreach ($countryList as $key => $country) {
             $value = $country['value'];
             if (!in_array($value, $sepaCountriesAllowed)) {

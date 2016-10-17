@@ -108,19 +108,13 @@ class Adyen_Payment_Model_Authenticate extends Mage_Core_Model_Abstract {
         $username = $this->_getConfigData('notification_username');
         $password = Mage::helper('core')->decrypt($this->_getConfigData('notification_password'));
         $submitedMerchantAccount = $response->getData('merchantAccountCode');
-        $notificationHmac = $this->_getConfigData('notification_hmac');
-
+        
         if (empty($submitedMerchantAccount) && empty($internalMerchantAccount)) {
         	if(strtolower(substr($response->getData('pspReference'),0,17)) == "testnotification_" || strtolower(substr($response->getData('pspReference'),0,5)) == "test_") {
                 Mage::log('Notification test failed: merchantAccountCode is empty in magento settings', Zend_Log::DEBUG, "adyen_notification.log", true);
                 echo 'merchantAccountCode is empty in magento settings'; exit();
         	}
             return false;
-        }
-
-        // If notification username and password is not set and HMAC is used as only authentication method validate HMAC key only
-        if($notificationHmac != "" && $username == "" && $password == "") {
-            return $this->validateNotificationHmac($response);
         }
 
         // validate username and password
@@ -130,14 +124,6 @@ class Adyen_Payment_Model_Authenticate extends Mage_Core_Model_Abstract {
                 echo 'Authentication failed: PHP_AUTH_USER and PHP_AUTH_PW are empty. See Adyen Magento manual CGI mode'; exit();
         	}
             return false;
-        }
-
-        // If HMAC encryption is used check if the notification is valid
-        if($notificationHmac != "") {
-            // if validation failed return false
-            if(!$this->validateNotificationHmac($response)) {
-                return false;
-            }
         }
 
         $accountCmp = !$this->_getConfigData('multiple_merchants')
@@ -160,82 +146,6 @@ class Adyen_Payment_Model_Authenticate extends Mage_Core_Model_Abstract {
         	}
         }
 
-        return false;
-    }
-
-    public function validateNotificationHmac(Varien_Object $response) {
-
-        // validate if signature is valid
-        $submitedMerchantAccount = $response->getData('merchantAccountCode');
-        $additionalData = $response->getData('additionalData'); // json
-        $additionalDataHmac = $response->getData('additionalData_hmacSignature'); // httppost
-
-        $hmacSignature = "";
-        if(isset($additionalData["hmacSignature"]) && $additionalData["hmacSignature"] != "") {
-            $hmacSignature = $additionalData["hmacSignature"];
-        } elseif(isset($additionalDataHmac) && $additionalDataHmac != "") {
-            $hmacSignature = $additionalDataHmac;
-        }
-
-        $notificationHmac = $this->_getConfigData('notification_hmac');
-        if($hmacSignature != "") {
-            // create Hmac signature
-
-            $pspReference = trim($response->getData('pspReference'));
-            $originalReference =  trim($response->getData('originalReference'));
-            $merchantReference =  trim($response->getData('merchantReference'));
-            $valueArray = $response->getData('amount');
-
-            // json
-            if($valueArray && is_array($valueArray)) {
-                $value =  $valueArray['value'];
-                $currencyCode = $valueArray['currency'];
-            } else {
-
-                // try http post values
-                $valueValue = $response->getData('value');
-                $currencyValue = $response->getData('currency');
-
-                if(isset($valueValue) && $valueValue != "") {
-                    $value = $valueValue;
-                } else {
-                    $value = "";
-                }
-
-                if(isset($currencyValue) && $currencyValue != "") {
-                    $currencyCode = $currencyValue;
-                } else {
-                    $currencyCode = "";
-                }
-            }
-
-            $eventCode =  $response->getData('eventCode');
-            $success =  $response->getData('success');
-
-            $sign = $pspReference . ":" . $originalReference . ":" . $submitedMerchantAccount . ":" . $merchantReference . ":" . $value . ":" .  $currencyCode . ":" .  $eventCode . ":" . $success;
-
-            // decodeHex
-            $decodeHex = pack('H*', $notificationHmac);
-
-            $signMac = Zend_Crypt_Hmac::compute($decodeHex, 'sha256', $sign);
-            $calculatedSign = base64_encode(pack('H*', $signMac));
-
-
-            // validate signature with the one in the notification
-            if(strcmp($calculatedSign, $hmacSignature) == 0) {
-                return true;
-            } else {
-                Mage::log('HMAC Calculation is not correct. The HMAC key in notifications is not the same as Calculated HMAC key. Please check if the HMAC key in notification is the same as magento settings. If not sure generate new HMAC code save notification and put the key in Magento settings as well.', Zend_Log::DEBUG, "adyen_notification.log", true);
-                if(strtolower(substr($response->getData('pspReference'),0,17)) == "testnotification_" || strtolower(substr($response->getData('pspReference'),0,5)) == "test_") {
-                    echo 'HMAC Calculation is not correct. The HMAC key in notifications is not the same as Calculated HMAC key. Please check if the HMAC key in notification is the same as magento settings. If not sure generate new HMAC code save notification and put the key in Magento settings as well.'; exit();
-                }
-            }
-        } else {
-            Mage::log('HMAC is missing in Notification.', Zend_Log::DEBUG, "adyen_notification.log", true);
-            if(strtolower(substr($response->getData('pspReference'),0,17)) == "testnotification_" || strtolower(substr($response->getData('pspReference'),0,5)) == "test_") {
-                echo 'HMAC is missing in Notification.'; exit();
-            }
-        }
         return false;
     }
 
