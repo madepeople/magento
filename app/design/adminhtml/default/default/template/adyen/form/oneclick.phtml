@@ -66,7 +66,7 @@
                 <label><?php echo $this->__('Card Verification Number') ?></label>
                 <?php if($this->hasVerification()): ?>
                     <div class="cvc_block" id="cvc_block_<?php echo $_code;?>">
-                        <input type="text" title="<?php echo $this->__('Card Verification Number') ?>" class="input-text cvv required-entry" id="<?php echo $_code ?>_cc_cid" <?php echo (!$this->isCseEnabled() ? "name=\"payment[oneclick_cid_".$_code."]\"" : "data-encrypted-name-oneclick-" . $_code ."=cvc"); ?> value="" />
+                        <input type="text" pattern="[0-9]{3,}" title="<?php echo $this->__('Card Verification Number') ?>" class="input-text cvv required-entry" id="<?php echo $_code ?>_cc_cid" <?php echo (!$this->isCseEnabled() ? "name=\"payment[oneclick_cid_".$_code."]\"" : "data-encrypted-name-oneclick-" . $_code ."=cvc"); ?> value="" />
                         <a href="#" class="cvv-what-is-this"><?php echo $this->__('What is this?') ?></a>
                     </div>
                 <?php endif; ?>
@@ -147,7 +147,7 @@
                     if (typeof adyen === 'undefined') {
                         var script = document.createElement("script");
                         script.type = "text/javascript";
-                        script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_16.js'); ?>";
+                        script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_18.js'); ?>";
                         document.body.appendChild(script);
                     }
 

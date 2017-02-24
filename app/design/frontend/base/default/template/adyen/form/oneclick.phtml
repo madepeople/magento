@@ -75,7 +75,7 @@ $_recurringDetails = $this->getRecurringDetails();
                         <label><?php echo $this->__('Card Verification Number') ?></label>
                         <?php if($this->hasVerification()): ?>
                             <div class="cvc_block" id="cvc_block_<?php echo $_code;?>">
-                                <input type="text" title="<?php echo $this->__('Card Verification Number') ?>" class="input-text cvv required-entry <?php echo $class; ?>" id="<?php echo $_code ?>_cc_cid" <?php echo (!$this->isCseEnabled() ? "name=\"payment[oneclick_cid_".$_code."]\"" : "data-encrypted-name-oneclick-" . $_code ."=cvc"); ?> value="" size="7" maxlength="<?php echo $maxLenght; ?>" />
+                                <input type="text" pattern="[0-9]{3,}" title="<?php echo $this->__('Card Verification Number') ?>" class="input-text cvv required-entry <?php echo $class; ?>" id="<?php echo $_code ?>_cc_cid" <?php echo (!$this->isCseEnabled() ? "name=\"payment[oneclick_cid_".$_code."]\"" : "data-encrypted-name-oneclick-" . $_code ."=cvc"); ?> value="" size="7" maxlength="<?php echo $maxLenght; ?>" />
                                 <a href="#" class="cvv-what-is-this"><?php echo $this->__('What is this?') ?></a>
                             </div>
                         <?php endif; ?>
@@ -121,27 +121,25 @@ $_recurringDetails = $this->getRecurringDetails();
                         }
 
                         var cse_key_oneclick = <?php echo json_encode($this->getCsePublicKey()); ?>;
-                        var cse_options_oneclick = {
+                        var cse_options_oneclick_<?php echo $_code ?> = {
                             name:  'payment_encrypted_data_<?php echo $_code;?>'
                         };
 
-                        var cseUpdateOneClick = function() {
+                        var cseUpdateOneClick_<?php echo $_code ?> = function() {
 
                             try {
-                                if (payment.currentMethod && payment.currentMethod == '<?php echo $_code ?>') {
-                                    // get closest form element
-                                    var elementOneClick = $('payment_form_<?php echo $_code ?>');
-                                    var cse_form_oneclick =  elementOneClick.match('form') ? elementOneClick : elementOneClick.up('form');
-                                    // add this field to option
-                                    cse_options_oneclick.fieldNameAttribute = "data-encrypted-name-oneclick-<?php echo $_code ?>";
+                                // get closest form element
+                                var elementOneClick = $('payment_form_<?php echo $_code ?>');
+                                var cse_form_oneclick =  elementOneClick.match('form') ? elementOneClick : elementOneClick.up('form');
+                                // add this field to option
+                                cse_options_oneclick_<?php echo $_code ?>.fieldNameAttribute = "data-encrypted-name-oneclick-<?php echo $_code ?>";
 
-                                    // do not validate because number does not exists for oneclick
-                                    cse_options_oneclick.enableValidations = false;
+                                // do not validate because number does not exists for oneclick
+                                cse_options_oneclick_<?php echo $_code ?>.enableValidations = false;
 
-                                    var cseFormOneClick = adyen.encrypt.createEncryptedForm(cse_form_oneclick, cse_key_oneclick, cse_options_oneclick);
-                                    // encrypt data directly because submit button is not always on the page
-                                    cseFormOneClick.createEncryptedField(cseFormOneClick.encrypt());
-                                }
+                                var cseFormOneClick = adyen.encrypt.createEncryptedForm(cse_form_oneclick, cse_key_oneclick, cse_options_oneclick_<?php echo $_code ?>);
+                                // encrypt data directly because submit button is not always on the page
+                                cseFormOneClick.createEncryptedField(cseFormOneClick.encrypt());
                             } catch (e) {
                                 if (typeof console == "object") {
                                     console.error(e);
@@ -152,11 +150,11 @@ $_recurringDetails = $this->getRecurringDetails();
 
                         };
 
-                        var cseInitOneClick = function() {
+                        var cseInitOneClick_<?php echo $_code ?> = function() {
                             if (typeof adyen === 'undefined') {
                                 var script = document.createElement("script");
                                 script.type = "text/javascript";
-                                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_16.js'); ?>";
+                                script.src = "<?php echo $this->getJsUrl('adyen/payment/adyen.encrypt_0_1_18.js'); ?>";
                                 document.body.appendChild(script);
                             }
 
@@ -171,11 +169,11 @@ $_recurringDetails = $this->getRecurringDetails();
 
                             var fields = $$('#payment_form_<?php echo $_code ?> input, #payment_form_<?php echo $_code ?> textarea, #payment_form_<?php echo $_code ?> select');
                             fields.forEach(function(field) {
-                                field.observe('change', cseUpdateOneClick);
+                                field.observe('change', cseUpdateOneClick_<?php echo $_code ?>);
                             });
                         };
 
-                        cseInitOneClick();
+                        cseInitOneClick_<?php echo $_code ?>();
                     </script>
                 <?php endif;?>
 
