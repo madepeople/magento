@@ -2,8 +2,8 @@
 
 /* Cardtype format: name, starting numbers ( , separated, (is not a range)), number of digits ( , separated)  */
 var Cards = new makeArray(22);
-//Cards[0] = new CardType("mc", "51,52,53,54,55", "16");
-Cards[0] = new CardType("MC", "51,52,53,54,55", "16");
+// Cards[0] = new CardType("mc", "51,52,53,54,55,22,23,24,25,26,27", "16");
+Cards[0] = new CardType("MC", "51,52,53,54,55,22,23,24,25,26,27", "16");
 var MasterCard = Cards[0];
 Cards[1] = new CardType("visadankort", "4571", "16");
 var VisaDankort = Cards[1];
