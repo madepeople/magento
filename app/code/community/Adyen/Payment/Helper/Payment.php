@@ -337,7 +337,6 @@ class Adyen_Payment_Helper_Payment extends Adyen_Payment_Helper_Data
             'shopperReference' => $customerId,
             'shopperIP' => $shopperIP,
             'browserInfo' => $browserInfo,
-            'issuerId' => $issuerId,
             'resURL' => $returnUrl,
             'merchantReturnData' => substr(urlencode($dataString), 0, 128),
             // @todo remove this and add allowed methods via a config xml node
@@ -347,6 +346,11 @@ class Adyen_Payment_Helper_Payment extends Adyen_Payment_Helper_Data
             'deliveryAddressType' => $deliveryAddressType,
             'shopperType' => $shopperType
         ];
+
+        // Add issuerID only if present
+        if($issuerId){
+            $adyFields['issuerId'] = $issuerId;
+        }
 
         // explode details for request
         $adyFields = $this->explodeArrayToRequestFields($adyFields, 'shopper', $shopperInfo);
