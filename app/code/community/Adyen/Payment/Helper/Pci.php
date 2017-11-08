@@ -107,6 +107,10 @@ class Adyen_Payment_Helper_Pci
      */
     protected function _obscureSensitiveKeyValue($key, $value)
     {
+        // do not log additionalData in request
+        if($key == "additionalData") {
+            $value = "NOT BEING LOGGED FOR SECURITY PURPOSES";
+        }
         // Is this a sensitive key with a string or numeric value?
         if (in_array(strtolower($key), self::$_sensitiveDataKeys) && (is_string($value) || is_numeric($value))) {
             $strVal = (string) $value;

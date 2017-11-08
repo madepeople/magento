@@ -49,6 +49,12 @@ class Adyen_Payment_Model_Event extends Mage_Core_Model_Abstract {
     const ADYEN_EVENT_NOF = "NOTIFICATION_OF_FRAUD";
     const ADYEN_EVENT_NOC = "NOTIFICATION_OF_CHARGEBACK";
     const ADYEN_EVENT_OFFER_CLOSED = "OFFER_CLOSED";
+    const ADYEN_EVENT_AUTHORISED_API = "Authorised";
+    const ADYEN_EVENT_REDIRECT_SHOPPER = "RedirectShopper";
+    const ADYEN_EVENT_CAPTURE_RECEIVED = "[capture-received]";
+    const ADYEN_EVENT_CANCEL_OR_REFUND_RECEIVED = "[cancelOrRefund-received]";
+    const ADYEN_EVENT_REFUND_RECEIVED = "[refund-received]";
+
 
     /**
      * Initialize resources

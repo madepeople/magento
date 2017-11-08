@@ -222,11 +222,16 @@ class Adyen_Payment_Model_Adyen_Data_PaymentRequest extends Adyen_Payment_Model_
 
                     $this->card = null;
 
-                    // this is only needed for creditcards
-                    if($payment->getAdditionalInformation("encrypted_data") != "" && $payment->getAdditionalInformation("encrypted_data") != "false" ) {
+                    $session = Mage::helper('adyen')->getSession();
+                    $info = $payment->getMethodInstance();
+                    $encryptedData = $session->getData('encrypted_data_'.$info->getCode());
+                    // remove it from the session
+                    $session->setData('encrypted_data_'.$info->getCode(), null);
+
+                    if($encryptedData != "" && $encryptedData != "false" ) {
                         $kv = new Adyen_Payment_Model_Adyen_Data_AdditionalDataKVPair();
                         $kv->key = new SoapVar("card.encrypted.json", XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
-                        $kv->value = new SoapVar($payment->getAdditionalInformation("encrypted_data"), XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
+                        $kv->value = new SoapVar($encryptedData, XSD_STRING, "string", "http://www.w3.org/2001/XMLSchema");
                         $this->additionalData->entry = $kv;
                     } else {
                         if($paymentMethod == 'cc') {

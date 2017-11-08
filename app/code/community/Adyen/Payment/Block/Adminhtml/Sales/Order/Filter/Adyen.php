@@ -29,19 +29,25 @@ class Adyen_Payment_Block_Adminhtml_Sales_Order_Filter_Adyen extends Mage_Adminh
 
     const EVENT_CODES_CACHE_KEY = 'adyen_event_codes';
 
-    protected function _getOptions() {
-        $events = Mage::app()->getCache()->load(self::EVENT_CODES_CACHE_KEY);
-        if ($events === false) {
-            $events = Mage::getResourceModel('adyen/adyen_event')->getAllDistinctEvents();
-            Mage::app()->getCache()->save(
-                serialize($events),
-                self::EVENT_CODES_CACHE_KEY,
-                array(Mage_Core_Model_Config::CACHE_TAG),
-                3600 // Cache for an hour
-            );
-        } else {
-            $events = unserialize($events);
-        }
+    protected function _getOptions()
+    {
+        $events = [
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_CAPTURE],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_CAPTURE_FAILED],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_REFUND],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_CANCEL_OR_REFUND],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISATION],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_RECURRING_CONTRACT],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_NOF],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_NOC],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_OFFER_CLOSED],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_HANDLED_EXTERNALLY],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISED_API],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_REDIRECT_SHOPPER],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_CAPTURE_RECEIVED],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_CANCEL_OR_REFUND_RECEIVED],
+            ['adyen_event_result' => Adyen_Payment_Model_Event::ADYEN_EVENT_REFUND_RECEIVED]
+        ];
 
         $select = array(
             array('label' => '', 'value' => ''),
@@ -58,7 +64,8 @@ class Adyen_Payment_Block_Adminhtml_Sales_Order_Filter_Adyen extends Mage_Adminh
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_CANCEL_OR_REFUND:
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_AUTHORISATION:
                 case Adyen_Payment_Model_Event::ADYEN_EVENT_NOF:
-                case Adyen_Payment_Model_Event::ADYEN_EVENT_NOC:                
+                case Adyen_Payment_Model_Event::ADYEN_EVENT_NOC:
+                case Adyen_Payment_Model_Event::ADYEN_EVENT_RECURRING_CONTRACT:
 
                     if ($event['adyen_event_result'] == Adyen_Payment_Model_Event::ADYEN_EVENT_REFUND) {
                         $eventNamePartialTrue = "(PARTIAL) " . $event['adyen_event_result'] . " : " . "TRUE";

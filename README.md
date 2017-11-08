@@ -1,8 +1,8 @@
 Magento
 =======
 
-This is the Adyen Payment plugin for Magento 1.x.
-The plugin supports the Magento Community and Enterprise edition. 
+This is the Adyen Payment plugin for Magento.
+The plugin supports the Magento Community (version 1.8 and higher) and Enterprise edition (version 1.13 and higher). 
 
 For Magento 2.x please use the following plugin: [https://github.com/Adyen/adyen-magento2](https://github.com/Adyen/adyen-magento2)
 
@@ -10,11 +10,13 @@ We commit all our new features directly into our GitHub repository.
 But you can also request or suggest new features or code changes yourself!
 
 <h2>Setup Module</h2>
-* <a target="_blank" href="http://vimeo.com/94005128">Click here to see the video how to setup your Adyen Magento module and the Adyen backoffice</a>
-* <a target="_blank" href="https://www.adyen.com/dam/jcr:80ea0213-02cd-43aa-8136-459a471d2a0d/MagentoQuickIntegrationManual.pdf">Click here to download the Magento Quick Integration Guide how to setup the basics for the Adyen Magento module and the Adyen backoffice</a>
-* <a target="_blank" href="https://docs.adyen.com/developers/magento#magentointegration">For a more advanced manual click here</a>
-* <a target="_blank" href="https://vimeo.com/128983014">Click here to see the Point-of-Sale demo of the Adyen Payment module</a>
-* <a target="_blank" href="https://vimeo.com/135459940">Click here to see how to configure the configuration of the Point-of-Sale</a>
+<ul>
+<li><a target="_blank" href="http://vimeo.com/94005128">Click here to see the video how to setup your Adyen Magento module and the Adyen backoffice</a></li>
+<li><a target="_blank" href="https://www.adyen.com/dam/jcr:80ea0213-02cd-43aa-8136-459a471d2a0d/MagentoQuickIntegrationManual.pdf">Click here to download the Magento Quick Integration Guide how to setup the basics for the Adyen Magento module and the Adyen backoffice</a></li>
+<li><a target="_blank" href="https://docs.adyen.com/developers/magento#magentointegration">For a more advanced manual click here</a></li>
+<li><a target="_blank" href="https://vimeo.com/128983014">Click here to see the Point-of-Sale demo of the Adyen Payment module</a></li>
+<li><a target="_blank" href="https://vimeo.com/135459940">Click here to see how to configure the configuration of the Point-of-Sale</a></li>
+</ul>
 
 <h2>Setup Cron</h2>
 It is needed to enable the Magento cron. Make sure that this is running every minute.

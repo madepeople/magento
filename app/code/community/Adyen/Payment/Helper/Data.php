@@ -568,4 +568,19 @@ class Adyen_Payment_Helper_Data extends Mage_Payment_Helper_Data
         }
         return false;
     }
+
+    /**
+     * Defines if it need to use the admin session or checkout session
+     *
+     * @return mixed
+     */
+    public function getSession()
+    {
+        if (Mage::app()->getStore()->isAdmin()) {
+            $session = Mage::getSingleton('adminhtml/session_quote');
+        } else {
+            $session = Mage::getSingleton('checkout/session');
+        }
+        return $session;
+    }
 }
